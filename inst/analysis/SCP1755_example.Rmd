@@ -3,31 +3,69 @@ title: "Example of label projection"
 output: html_notebook
 ---
 
+# Acquire the eigenProjectR pre-made list objects
+From [INSERT IN URL]
+```{r}
+load('~/Downloads/scEiaD_seacell_pca_objs.Rdata')
+# load('inst/data/scEiaD_seacell_pca_objs.Rdata')
+```
+
+# Acquire outside data
+https://singlecell.broadinstitute.org/single_cell/study/SCP1755/joint-scrna-seq-and-scatac-seq-atlas-of-the-adult-human-retina#study-download
+
+Download:
+  - processed_barcodes.tsv.gz 
+  - processed_features.tsv.gz 
+  - processed_matrix.mtx.gz 
+  
+Make folder "SCP1755"
+
+Put those three files into SCP1755 and hand delete the "processed_" part from each of the three names.
+
+Also Download:
+  - scPortal_metadata_file.txt 
+
+# Example of how SCP755 should look (I did this all in my ~/Downloads folder)
+```{r}
+list.files('~/Downloads/SCP1755')
+```
+
+
+# Load in SCP755 
+After loading the counts in as a `SingleCellExperiment` object, we then add in the cell type assignments to each cell
 ```{r}
 library(tidyverse)
 library(scran)
 library(eigenProjectR)
-load('inst/data/scEiaD_seacell_pca_objs.Rdata')
+
 scp1755 <- DropletUtils::read10xCounts('~/Downloads/SCP1755/')
-scp1755_meta <- read_tsv('~/Downloads/SCP1755_scPortal_metadata_file.txt')
+scp1755_meta <- read_tsv('~/Downloads/scPortal_metadata_file.txt')
 
 scp1755_meta <- scp1755_meta[2:nrow(scp1755_meta),]
 
 colData(scp1755)$NAME <- colnames(assay(scp1755))
 
 colData(scp1755)$celltype <- colData(scp1755) %>% as_tibble() %>% mutate(NAME = Barcode) %>% left_join(scp1755_meta) %>% pull(cell_type__custom)
+```
 
+# Aggregate to the cell type level
+```{r}
 scp1755_sum_counts <- aggregateAcrossCells(scp1755, colData(scp1755)$celltype) %>% assay()
 row.names(scp1755_sum_counts) <- rowData(scp1755)$Symbol
+```
 
+# PROFIT!!!!!!!!!!!
+```{r}
 scp1755_projected <- eigenProjectR(scp1755_sum_counts, rotation = seacell_pca_human_adult$PCA$rotation)
 
 
-lr_model <- model_build(seacell_pca_human_adult$PCA$x[,1:200],
+lr_model <- model_build(seacell_pca_human_adult$PCA$x[,1:250],
                         seacell_pca_human_adult$meta$CellType,
                         BPPARAM = BiocParallel::MulticoreParam(4), verbose = FALSE)
 
 model_apply(lr_model, scp1755_projected)
+```
+
 
 ##############################
 #
