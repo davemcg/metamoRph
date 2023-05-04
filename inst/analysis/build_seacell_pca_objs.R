@@ -1,7 +1,11 @@
 library(matrixStats)
 library(tidyverse)
-library(umap)
+#library(umap)
 
+# you have to manually download and extract this data from [INSERT URL]
+# on the command line (bash)
+# e.g. wget [INSERT URL]
+# then tar -xzvf NAME
 meta_files <- list.files('~/data/eiad_seacells/', full.names = TRUE) %>% grep('obs', ., value=TRUE)
 seacell_files <- list.files('~/data/eiad_seacells/', full.names = TRUE) %>% grep('aggr', ., value=TRUE)
 
@@ -37,35 +41,50 @@ seacell_summarise <- seacell_summarise %>%
 meta %>%
   mutate(seacell_id = paste0(sample_accession, '__', str_extract(SEACell, '\\d+'))) %>%
   select(seacell_id, organism, integration_group) %>% unique()
-seacell_summarise %>% head()
+seacell_summarise %>% ungroup() %>% sample_n(10)
 
 
 
-#####################################
-# add in human readable gene names
-gene_annotations <-
-  rtracklayer::import("data/human.gene_sums.G029.gtf.gz") %>%
-  as.data.frame()
+
+
+
 
 seacell_mat <- seacell[,2:ncol(seacell)] %>% as.matrix()
 row.names(seacell_mat) <- seacell[,1] %>% pull(1)
 
+
+#####################################
+# add in human readable gene names
+# gene_annotations <-
+#   rtracklayer::import("data/human.gene_sums.G029.gtf.gz") %>%
+#   as.data.frame()
+library('biomaRt')
+mart <- useMart('ENSEMBL_MART_ENSEMBL')
+mart <- useDataset('hsapiens_gene_ensembl', mart)
+gene_table <- getBM(
+  mart = mart,
+  attributes = c( 'ensembl_gene_id', 'hgnc_symbol'),
+  filter = 'ensembl_gene_id',
+  values = colnames(seacell_mat),
+  uniqueRows = TRUE)
+
 # new gene names
 colnames(seacell_mat) <- colnames(seacell_mat) %>%
   enframe() %>%
-  left_join(gene_annotations %>% mutate(value = gsub('\\.\\d+','',gene_id)) ) %>%
-  mutate(nname = paste0(gene_name, ' (', value, ')')) %>%
+  left_join(gene_table %>%
+              group_by(ensembl_gene_id) %>%
+              # if there are multiple ensembl <-> hgnc relations, then
+              # just pick the first one. YOLO.
+              summarise(hgnc_symbol = head(hgnc_symbol,1)) %>%
+              mutate(value = ensembl_gene_id) ) %>%
+  mutate(nname = paste0(hgnc_symbol, ' (', value, ')')) %>%
   pull(nname)
 
 # add counts info to meta
 seacell_summarise <- seacell_summarise %>% left_join(seacell_mat %>% rowSums() %>% enframe(name = 'seacell_id', value = 'sum_counts'))
 
-# write
-#write_tsv(meta, file = '../data/seacell_meta.tsv.gz')
-#write_tsv(seacell_summarise, file = '../data/seacell_summarise.tsv.gz')
-#write_tsv(seacell_mat %>% as_tibble(rownames = 'seacell_id'), file = '../data/seacell_mat.tsv.gz')
 
-source('src/run_pca.R')
+library(eigenProjectR)
 
 ##### ensure metadata is in same order as count matrix
 meta_mat <- row.names(seacell_mat) %>% enframe(value = 'seacell_id') %>% left_join(seacell_summarise)
@@ -123,5 +142,5 @@ seacell_pca <- run_pca(t(seacell_mat[meta$seacell_id,]),
                        ntop = 2500)
 
 
-save(seacell_pca_human_adult, seacell_pca_human_fetal, seacell_pca_mouse_adult, seacell_pca_mouse_fetal,  file = 'data/scEiaD_seacell_pca_objs.Rdata')
-save(seacell_pca, file = 'data/scEiaD_seacell_pca_all.Rdata')
+#save(seacell_pca_human_adult, seacell_pca_human_fetal, seacell_pca_mouse_adult, seacell_pca_mouse_fetal,  file = 'data/scEiaD_seacell_pca_objs.Rdata')
+#save(seacell_pca, file = 'data/scEiaD_seacell_pca_all.Rdata')
