@@ -1,6 +1,6 @@
 Package: eigenProjectR
 Title: Knowledge transfer via eigenvector matrix multiplication
-Version: 0.0.1
+Version: 0.0.2
 Authors@R: 
     person("David", "McGaughey", , "mcgaughey@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9224-2888"))

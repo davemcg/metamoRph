@@ -22,12 +22,19 @@ eigenProjectR <- function(new_counts, rotation){
   # extract gene names from new data
   row_genes <- row.names(new_counts) %>% gsub('\\.\\d+','',.) %>% toupper()
   row.names(new_counts) <- row_genes
-  # extract gene names from PCA rotation / loading / eigenvtor
-  # and turn into a table
-  feature_id_table <- row.names(rotation) %>%
-    enframe() %>%
-    separate(value, c('feature_id','ensgene'), sep = ' \\(') %>% mutate(ensgene = gsub(')','',ensgene)) %>%
-    dplyr::select(-name)
+  # special handling for the McGaughey EiaD resources which use
+  # the gene naming scheme GENE (ENSG)
+  if (grepl(' \\(ENS', row.names(new_counts)[1])){
+    feature_id_table <- row.names(rotation) %>% enframe() %>%
+      separate(value, c("feature_id", "ensgene"), sep = " \\(") %>%
+      mutate(ensgene = gsub(")", "", ensgene)) %>% dplyr::select(-name)
+  } else {
+    feature_id_table <- row.names(rotation) %>%
+      gsub("\\.\\d+", "",.) %>%
+      toupper() %>% enframe(value = 'feature_id') %>%
+      mutate(ensgene = NA) %>%
+      dplyr::select(-name)
+  }
 
   # the precalculated PCA rotations have a naming scheme as follows:
   ## GENE ID (ENSEMBL ID)
