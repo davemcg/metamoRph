@@ -18,9 +18,12 @@
 #' @export
 model_build <- function(training_data,
                         training_labels,
+                        num_PCs = 200,
                         BPPARAM = BiocParallel::SerialParam(),
                         model = 'lm',
                         verbose = TRUE){
+  # cut down to requested PC
+  training_data <- training_data[,1:num_PCs]
   require(BiocParallel)
   models <- lapply(unique(sort(training_labels)), function(target) {
     if (verbose){
