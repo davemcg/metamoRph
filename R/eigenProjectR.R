@@ -44,8 +44,8 @@ eigenProjectR <- function(new_counts, rotation){
 
   if ((length(overlap_with_ID) < 200) &
       (length(overlap_with_ens) < 200)){
-    stop("Failure to align gene (feature) names, please check your input matrix rownames
-    against the names of your rotation vector")
+    stop("Failure to align gene (feature) names, please check your
+    input matrix rownames against the names of your rotation vector")
   } else {
     # select column ID type to use
     if (length(overlap_with_ID) >
@@ -82,7 +82,7 @@ eigenProjectR <- function(new_counts, rotation){
   # Match order of feature_ids from reference PCA
   ## build PCA rotation gene object to ensure the input data is in the
   ## same order
-  scaled_cutdown <- scaled_cutdown[feature_universe, ]
+  scaled_cutdown <- scaled_cutdown[feature_universe, , drop = FALSE]
 
   # scale after getting the new data organized
   # with the same genes as the reference
