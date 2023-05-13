@@ -7,6 +7,7 @@
 model_build(
   training_data,
   training_labels,
+  num_PCs = 200,
   BPPARAM = BiocParallel::SerialParam(),
   model = "lm",
   verbose = TRUE
@@ -17,6 +18,9 @@ model_build(
 
 \item{training_labels}{vector which has the row-matched labels (e.g. cell types)
 for each sample.}
+
+\item{num_PCs}{number of principal components to use from the training_data.
+Defaults to the first (top) 200.}
 
 \item{BPPARAM}{The BiocParallel class}
 

@@ -11,6 +11,8 @@
 #' @param training_data sample (row) by principal component (column) matrix
 #' @param training_labels vector which has the row-matched labels (e.g. cell types)
 #' for each sample.
+#' @param num_PCs number of principal components to use from the training_data.
+#' Defaults to the first (top) 200.
 #' @param BPPARAM The BiocParallel class
 #' @param model lm or glm. We strongly recommend using lm.
 #' @param verbose Print training status for each label type
@@ -23,6 +25,12 @@ model_build <- function(training_data,
                         model = 'lm',
                         verbose = TRUE){
   # cut down to requested PC
+  ## issue warning if num_PCs > number of actual PC
+  if (ncol(training_data) < num_PCs){
+    warning(paste0("Dropping num PCs requested from ",
+                   num_PCs, " to number of columns in training data"))
+  }
+  num_PCs <- min(ncol(training_data), num_PCs)
   training_data <- training_data[,1:num_PCs]
   require(BiocParallel)
   models <- lapply(unique(sort(training_labels)), function(target) {
