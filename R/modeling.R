@@ -114,7 +114,7 @@ model_apply <- function(list_of_models,
 
   calls <- as_tibble(calls) %>%
     mutate(min_score = as.numeric(min_score),
-           predict_stringent = case_when(min_score >0.5 ~ 'Unknown',
+           predict_stringent = case_when(min_score > 0.5 ~ 'Unknown',
                                          TRUE ~ predict)) %>%
     relocate(min_score, .after = predict_stringent)
   if (return_predictions){
