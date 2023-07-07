@@ -33,7 +33,7 @@ A list of models for each individual label type
 }
 \description{
 This function uses the training_data and the training_labels to build a lm
-based model for each label type which can be used in \code{\link[=model_apply]{model_apply()}}.
+based model for each label type which can be used in \code{\link[eigenProjectR:model_apply]{eigenProjectR::model_apply()}}.
 The training_data is intended to be the sample x PC (principal component)
 row x column matrix. Which is the \verb{$x} output from base R prcomp. We provide
 precomputed prcomp PCA outputs from the \url{plae.nei.nih.gov} resource

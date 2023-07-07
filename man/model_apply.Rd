@@ -14,7 +14,7 @@ model_apply(
 \arguments{
 \item{list_of_models}{sample (row) by principal component (column) matrix}
 
-\item{experiment_data}{Projected data \code{\link[=eigenProjectR]{eigenProjectR()}}}
+\item{experiment_data}{Projected data \code{\link[eigenProjectR:eigenProjectR]{eigenProjectR::eigenProjectR()}}}
 
 \item{experiment_labels}{Optional labels for the users experiment_data}
 
@@ -26,5 +26,5 @@ each label type) is returned.}
 By default, a table of predicted labels for your data
 }
 \description{
-This function uses the output from \code{\link[=model_build]{model_build()}}
+This function uses the output from \code{\link[eigenProjectR:model_build]{eigenProjectR::model_build()}}
 }
