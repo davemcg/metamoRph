@@ -45,14 +45,14 @@ metamoRph <- function(new_counts,
     new_cpm <- new_counts |> log1p()
   }
 
-  # extract gene names from new data
-  ## remove .digit endings (if they are on ensgene then trouble if the
-  ## new ensgene are a different version than the old one)
-  row_genes <- gsub('\\.\\d+','',row.names(new_cpm)) |> toupper()
+  # extract gene names from new data and make upper case
+  row_genes <- row.names(new_cpm) |> toupper()
   row.names(new_cpm) <- row_genes
   # this bit is for the mcgaughey (sc)EiaD data which uses a gene naming
   # scheme that pastes together the common gene name with the ENSEMBL id
-  suppressWarnings(feature_id_table <- row.names(rotation) |> enframe() |>
+  suppressWarnings(feature_id_table <- row.names(rotation) |>
+                     toupper() |>
+                     enframe() |>
                      separate(value, c("feature_id", "ensgene"), sep = " \\(") |>
                      mutate(ensgene = gsub(")", "", ensgene)) |> dplyr::select(-name))
   overlap_with_ID <- row_genes[row_genes %in% feature_id_table$feature_id]
@@ -92,8 +92,6 @@ metamoRph <- function(new_counts,
   cutdown <- cutdown[feature_universe, , drop = FALSE]
 
   if (!missing(center_scale)){
-    # custom feature scaling
-    message("Scaling on given values")
     scaled_cutdown <- scale(t(cutdown), center_scale$center,
                             center_scale$scale)
   } else{
