@@ -12,19 +12,21 @@ model_apply(
 )
 }
 \arguments{
-\item{list_of_models}{sample (row) by principal component (column) matrix}
+\item{list_of_models}{list object containing one model per sample type (e.g. photoreceptors vs not-photoreceptors)}
 
-\item{experiment_data}{Projected data \code{\link[eigenProjectR:eigenProjectR]{eigenProjectR::eigenProjectR()}}}
+\item{experiment_data}{Projected data \code{\link[=metamoRph]{metamoRph()}}}
 
 \item{experiment_labels}{Optional labels for the users experiment_data}
 
 \item{return_predictions}{By default the predicted labels are returned.
-If set to TRUE, then the entire matrix of probabilites for each sample (against
+If set to TRUE, then the entire matrix of probabilities for each sample (against
 each label type) is returned.}
 }
 \value{
-By default, a table of predicted labels for your data
+By default, a table of predicted labels for your data, if return_predictions set to TRUE then
+a matrix of probabilities for each sample type is returned (where rows are samples and columns
+are each sample type probability)
 }
 \description{
-This function uses the output from \code{\link[eigenProjectR:model_build]{eigenProjectR::model_build()}}
+This function uses the output from \code{\link[=model_build]{model_build()}}
 }

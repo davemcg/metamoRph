@@ -9,6 +9,7 @@ run_pca(
   meta,
   ntop = 1000,
   hvg_selection = "scran",
+  hvg_force = NULL,
   feature_scale = TRUE,
   feature_center = TRUE,
   sample_cpm_scale = TRUE,

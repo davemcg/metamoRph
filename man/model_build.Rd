@@ -24,7 +24,8 @@ Defaults to the first (top) 200.}
 
 \item{BPPARAM}{The BiocParallel class}
 
-\item{model}{lm or glm. We strongly recommend using lm.}
+\item{model}{Default is lm. We also support xgboost, glm, rf, and svm.
+In our experience we find lm and svm to be the best performers.}
 
 \item{verbose}{Print training status for each label type}
 }
@@ -33,10 +34,10 @@ A list of models for each individual label type
 }
 \description{
 This function uses the training_data and the training_labels to build a lm
-based model for each label type which can be used in \code{\link[eigenProjectR:model_apply]{eigenProjectR::model_apply()}}.
+based model for each label type which can be used in \code{\link[=model_apply]{model_apply()}}.
 The training_data is intended to be the sample x PC (principal component)
 row x column matrix. Which is the \verb{$x} output from base R prcomp. We provide
 precomputed prcomp PCA outputs from the \url{plae.nei.nih.gov} resource
 for adult human eye, adult mouse eye, fetal human eye, and fetal mouse eye (
-see \code{vignette("pca_download", package = "eigenProjectR")})
+see \code{vignette("pca_download", package = "metamoRph")})
 }
