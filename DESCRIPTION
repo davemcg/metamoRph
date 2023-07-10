@@ -1,18 +1,31 @@
-Package: eigenProjectR
-Title: Knowledge transfer via eigenvector matrix multiplication
-Version: 0.0.4
+Package: metamoRph
+Title: Metadata projection via data morphing with matrix factorization multiplication
+Version: 0.1
 Authors@R: 
     person("David", "McGaughey", , "mcgaughey@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9224-2888"))
-Description: Takes existing, labelled, data and using eigenvector matrix multiplication to project new data into the same space for machine learning based label transfer
+Description: Takes existing data and ensures proper feature and sample scaling along with matrix multiplication to project new data into the same space. Also provides ML tooling to transfer existing labels (e.g. Tissue or Cell Type) onto the new data.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8
 LazyData: true
 biocViews:
 Imports:
+  BiocParallel,
+  cowplot,
+  edgeR,
+  matrixStats,
+  parsnip,
   scran,
   SingleCellExperiment,
-  dplyr
+  dplyr,
+  tibble,
+  tidymodels,
+  tidyr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
+Suggests: 
+  data.table,
+  knitr,
+  rmarkdown
+VignetteBuilder: knitr
