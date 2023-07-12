@@ -1,0 +1,9 @@
+^eigenProjectR\.Rproj$
+^\.Rproj\.user$
+^inst/data$
+.*h5ad$
+^vignettes/articles$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
