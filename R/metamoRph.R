@@ -37,12 +37,16 @@ metamoRph <- function(new_counts,
                       log1p = TRUE){
   value <- ensgene <- name <- NULL # https://www.r-bloggers.com/2019/08/no-visible-binding-for-global-variable/
 
+  new_cpm <- new_counts # in case no sample scaling is selected
+
   if (sample_cpm_scale){
+    message("Sample CPM scaling")
     new_cpm <- edgeR::cpm(new_counts, log = FALSE)
   }
 
   if (log1p){
-    new_cpm <- new_counts |> log1p()
+    message("Sample log1p scaling")
+    new_cpm <- new_cpm |> log1p()
   }
 
   # extract gene names from new data and make upper case
@@ -92,6 +96,7 @@ metamoRph <- function(new_counts,
   cutdown <- cutdown[feature_universe, , drop = FALSE]
 
   if (!missing(center_scale)){
+    message("Applying custom scaling")
     scaled_cutdown <- scale(t(cutdown), center_scale$center,
                             center_scale$scale)
   } else{
@@ -124,6 +129,8 @@ metamoRph <- function(new_counts,
 #' will simply use the top n features by variance, and "scran" will use the scran package's
 #' strategy of scaling variance by expression (as highly expressed features/genes) will
 #' also have higher variance and thus may be less useful for sample distinction.
+#' @param hvg_force Optional vector of features / genes that must be in the stats::promp
+#' input
 #' @param feature_scale Default is TRUE, which means features (genes) are scaled
 #' with the R::scale function.
 #' @param feature_center Default is TRUE, which means features (genes) are centered
@@ -144,6 +151,7 @@ run_pca <- function(feature_by_sample,
                     meta,
                     ntop = 1000,
                     hvg_selection = 'scran',
+                    hvg_force = NULL,
                     feature_scale = TRUE,
                     feature_center = TRUE,
                     sample_cpm_scale = TRUE,
@@ -171,7 +179,8 @@ run_pca <- function(feature_by_sample,
 
   if (hvg_selection == 'classic') {
     Pvars <- rowVars(feature_by_sample)
-    select <- order(Pvars, decreasing = TRUE)[seq_len(min(ntop, length(Pvars)))]
+    names(Pvars) <- row.names(feature_by_sample)
+    select <- sort(Pvars, decreasing = TRUE)[seq_len(min(ntop, length(Pvars)))] |> names()
   } else if (hvg_selection == 'scran') {
     sce_internal <- SingleCellExperiment(list(logcounts = (feature_by_sample)))
     feature_var <- modelGeneVar(sce_internal)
@@ -179,6 +188,14 @@ run_pca <- function(feature_by_sample,
       arrange(-bio) |> head(ntop) |> pull(Gene)
   } else {
     stop("Select either classic or scran for hvg_selection please")
+  }
+
+  if (length(hvg_force) > 0){
+    # add in user required features
+    select <- c(select, hvg_force)
+    # if (!hvg_force %in% row.names(feature_by_sample)){
+    #   stop("Requested feature / gene not in your input matrix!")
+    # }
   }
 
   # Rotate
@@ -204,4 +221,20 @@ run_pca <- function(feature_by_sample,
                             'log1p' = log1p,
                             'remove_regex' = remove_regex))
   out
+}
+
+#' extract_prcomp_scaling
+#'
+#' This function takes in a prcomp object and returns the center and scale
+#' vectors a list for direct use in metamoRph::metamoRph.
+#'
+#' @param prcomp_object A precomputed prcomp object
+#' @return  a list object containing the prcomp "center" and "scale"
+#' values for use in the metamoRph function
+
+#' @export
+extract_prcomp_scaling <- function(prcomp_object){
+  out <- list(center = prcomp_object$center,
+                scale = prcomp_object$scale)
+  return(out)
 }
