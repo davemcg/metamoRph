@@ -1,12 +1,12 @@
 #' model_build
 #'
 #' This function uses the training_data and the training_labels to build a lm
-#' based model for each label type which can be used in [eigenProjectR::model_apply()].
+#' based model for each label type which can be used in [metamoRph::model_apply()].
 #' The training_data is intended to be the sample x PC (principal component)
 #' row x column matrix. Which is the `$x` output from base R prcomp. We provide
 #' precomputed prcomp PCA outputs from the \url{plae.nei.nih.gov} resource
 #' for adult human eye, adult mouse eye, fetal human eye, and fetal mouse eye (
-#' see \code{vignette("pca_download", package = "eigenProjectR")})
+#' see \code{vignette("pca_download", package = "metamoRph")})
 #'
 #' @param training_data sample (row) by principal component (column) matrix
 #' @param training_labels vector which has the row-matched labels (e.g. cell types)
@@ -21,6 +21,7 @@
 #' @import BiocParallel
 #' @import tidymodels
 #' @import parsnip
+#' @importFrom stats lm glm binomial
 #' @export
 model_build <- function(training_data,
                         training_labels,
@@ -32,14 +33,15 @@ model_build <- function(training_data,
   ## issue warning if num_PCs > number of actual PC
   if (ncol(training_data) < num_PCs){
     warning(paste0("Dropping num PCs requested from ",
-                   num_PCs, " to number of columns in training data"))
+                   num_PCs, " to number of columns in training data (", ncol(training_data), ")")
+    )
     num_PCs <- ncol(training_data)
   }
   training_data <- training_data[,1:num_PCs]
-  require(BiocParallel)
+
   models <- bplapply(unique(sort(training_labels)), function(target) {
     if (verbose){
-      print(paste0("Model training for ", target))
+      message(paste0("Model training for ", target))
     }
     binary_training_labels <- training_labels
     binary_training_labels[binary_training_labels != target] <- 'Other'
@@ -56,12 +58,12 @@ model_build <- function(training_data,
       model <- boost_tree(mode = "regression", trees = 200) %>%
         fit(labels ~ .,
             data = data.frame(cbind(labels,training_data)))
-    # } else if (model == 'nnet'){
-    #   model <- mlp() %>%
-    #     set_engine("nnet") %>%
-    #     set_mode("regression") %>%
-    #     fit(labels ~ .,
-    #         data = data.frame(cbind(labels,training_data)))
+      # } else if (model == 'nnet'){
+      #   model <- mlp() %>%
+      #     set_engine("nnet") %>%
+      #     set_mode("regression") %>%
+      #     fit(labels ~ .,
+      #         data = data.frame(cbind(labels,training_data)))
     } else if (model == 'rf'){
       model <-  rand_forest(trees = 500, min_n = 5) %>%
         set_mode("regression") %>%
@@ -87,10 +89,10 @@ model_build <- function(training_data,
 
 #' model_apply
 #'
-#' This function uses the output from [eigenProjectR::model_build()]
+#' This function uses the output from [metamoRph::model_build()]
 #'
 #' @param list_of_models list object containing one model per sample type (e.g. photoreceptors vs not-photoreceptors)
-#' @param experiment_data Projected data [eigenProjectR::eigenProjectR()]
+#' @param experiment_data Projected data [metamoRph::metamoRph()]
 #' @param experiment_labels Optional labels for the users experiment_data
 #' @param return_predictions By default the predicted labels are returned.
 #' If set to TRUE, then the entire matrix of probabilities for each sample (against
@@ -106,6 +108,7 @@ model_apply <- function(list_of_models,
                         experiment_labels = '',
                         return_predictions = FALSE){
 
+  sample_id <- sample_label <- max_score <- predict_stringent <- NULL
   predictions <- list()
   for (i in names(list_of_models)){
     predictions[[i]] <- (predict(list_of_models[[i]], (experiment_data)))
@@ -113,16 +116,23 @@ model_apply <- function(list_of_models,
   # turn predictions into a tibble
   predictions <- predictions %>% bind_cols()
   colnames(predictions) <- names(list_of_models)
+  second_max_col <- function(x) {
+    sorted_values <- sort(x, decreasing = TRUE)
+    second_highest <- sorted_values[2]
+    which(x == second_highest)
+  }
   # identify the most likely celltype call (highest value) for each sample
+  # and the 2nd
   calls <- cbind(row.names(experiment_data),
                  colnames(predictions)[apply(predictions, 1, which.max)],
+                 colnames(predictions)[apply(predictions, 1, second_max_col)],
                  apply(predictions, 1, max)) %>%
     data.frame()
-  colnames(calls) <- c('sample_id', 'predict', 'max_score')
+  colnames(calls) <- c('sample_id', 'predict', 'predict_second', 'max_score')
   # optionally put in true labels for input data (if given)
   if (experiment_labels[1] != ''){
     calls$sample_label <- experiment_labels
-    colnames(calls) <- c('sample_id', 'predict', 'max_score', 'sample_label')
+    colnames(calls) <- c('sample_id', 'predict', 'predict_second', 'max_score', 'sample_label')
     calls <- calls %>% relocate(sample_id, sample_label)
   }
 
