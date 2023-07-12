@@ -5,14 +5,12 @@ Authors@R:
     person("David", "McGaughey", , "mcgaughey@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9224-2888"))
 Description: Takes existing data and ensures proper feature and sample scaling along with matrix multiplication to project new data into the same space. Also provides ML tooling to transfer existing labels (e.g. Tissue or Cell Type) onto the new data.
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: LICENSE
 Encoding: UTF-8
 LazyData: true
 biocViews:
 Imports:
   BiocParallel,
-  cowplot,
   edgeR,
   matrixStats,
   parsnip,
@@ -25,7 +23,13 @@ Imports:
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Suggests: 
+  cowplot,
   data.table,
+  ggforce,
+  ggplot2,
+  pals,
+  projectR,
   knitr,
   rmarkdown
 VignetteBuilder: knitr
+URL: https://davemcg.github.io/metamoRph/
