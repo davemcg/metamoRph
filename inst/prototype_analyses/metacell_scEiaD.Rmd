@@ -1,0 +1,99 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+library(tidyverse)
+library(fst)
+x_dir <- -1
+y_dir <- 1
+
+#meta_filter <- read_fst('/Volumes/Thunder/data/scEiaD_2022_02//meta_filter.fst') %>%
+meta_filter <- read_fst('~/data/scEiaD_2022_02//meta_filter.fst') %>%
+  as_tibble() %>%
+  mutate(CellType_predict = case_when(!is.na(TabulaMurisCellType_predict) & !is.na(CellType_predict) ~ 'Tabula Muris',
+                                      is.na(CellType_predict) ~ 'Unlabelled',
+                                      TRUE ~ CellType_predict)) %>%
+  # filter(study_accession != 'Bharti_Nguyen_iRPE_2D_3D') %>%
+  mutate(UMAP_a = UMAP_1 * x_dir,
+         UMAP_b = UMAP_2 * y_dir) %>%
+  mutate(UMAP_1 = UMAP_a, UMAP_2 = UMAP_b)
+
+map_color <- function(column, meta_filter){
+  master_colorlist <- c(pals::alphabet(), pals::cols25()[1:23], pals::glasbey(), pals::alphabet2()) %>% unique()
+  values <- meta_filter %>% pull(!!column) %>% unique %>% sort
+  if(length(values) > length(master_colorlist) ){
+    r= round(length(values) / length(master_colorlist)) +1
+    master_colorlist <- rep(master_colorlist, r)
+  }
+  
+  colors <- master_colorlist[1:length(values)]
+  return(tibble(meta_category = column,value = values, color=colors))
+  
+}
+
+categorical_columns <- c("Phase","batch","study_accession","library_layout","organism","Platform",
+                         "Covariate","CellType","CellType_predict","TabulaMurisCellType","TabulaMurisCellType_predict",
+                         "GSE","Summary","Design","Citation","PMID","Stage","cluster",
+                         "Doublet","TechType", "SubCellType", 'subcluster', 'Age', "retina_region",
+                         'Tissue','Organ', 'Source','sample_accession')
+#"SubCellType" and subcluster are problems
+meta_filter <- meta_filter %>% mutate(Age = as.character(Age), SubCellType = tidyr::replace_na(SubCellType, 'None'),
+                                      subcluster = as.character(subcluster))
+
+
+cat_to_color_df <- lapply(categorical_columns, function(col) map_color(col, meta_filter)) %>% bind_rows()
+# now roll through and set each value to the same color across CellType and CellType (predict)
+# e.g. RPE will be one color in CellType and CellType (Predict)
+celltype_x_color_map <- cat_to_color_df %>% filter(meta_category %in% c("CellType", "CellType_predict")) %>% group_by(value) %>% summarise(c2 = head(color,1))
+cat_to_color_df <- cat_to_color_df %>% left_join(celltype_x_color_map) %>% mutate(color = case_when(!is.na(c2) ~ c2, TRUE ~ color)) %>% select(-c2)
+
+
+source('~/git/plaeApp/inst/app/make_meta_scatter_umap_plot.R')
+```
+
+```{r, fig.width=10, fig.height=10}
+
+library(shiny)
+library(scattermore)
+library(cowplot)
+color_list <- cat_to_color_df %>% filter(meta_category == 'CellType_predict') %>% pull(color)
+names(color_list) <- cat_to_color_df %>% filter(meta_category == 'CellType_predict') %>% pull(value)
+meta_filter %>%  sample_frac(0.3) %>% 
+  ggplot(aes(x=UMAP_1,y=UMAP_2,color = CellType_predict)) + 
+  geom_scattermore(alpha = 0.15) +            
+  ggrepel::geom_label_repel(data = meta_filter %>% 
+                              filter(CellType != 'Tabula Muris') %>% 
+                              group_by(CellType_predict) %>% 
+                              summarise(UMAP_1 = mean(UMAP_1), UMAP_2 = mean(UMAP_2)),
+                            aes(label = CellType_predict)
+  ) + 
+  scale_colour_manual(name= 'CellType_predict',
+                      values = color_list) +
+  cowplot::theme_cowplot() +
+  theme(legend.position = 'None')
+```
+
+
+```{r, fig.width=10, fig.height=10}
+meta_filter %>%  sample_frac(0.3) %>% 
+  ggplot(aes(x=UMAP_1,y=UMAP_2,color = CellType_predict)) + 
+  #geom_scattermore(alpha = 0.15) +            
+  geom_point(data =  meta_mat %>% mutate(CellType_predict = CellType, UMAP_1 = -1 * UMAP_1), size = 0.5) +
+  ggrepel::geom_label_repel(data = meta_filter %>% 
+                              filter(CellType != 'Tabula Muris') %>% 
+                              group_by(CellType_predict) %>% 
+                              summarise(UMAP_1 = mean(UMAP_1), UMAP_2 = mean(UMAP_2)),
+                            aes(label = CellType_predict)
+  ) + 
+  scale_colour_manual(name= 'CellType_predict',
+                      values = color_list) +
+  cowplot::theme_cowplot() +
+  theme(legend.position = 'None')
+```
+

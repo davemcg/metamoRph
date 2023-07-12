@@ -1,0 +1,122 @@
+---
+title: "Human scEiaD PCA/nmf Workup"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+library(umap)
+library(RcppML)
+```
+
+```{r, fig.width=6, fig.height=4}
+custom.settings = umap.defaults
+custom.settings$n_neighbors = 30
+custom.settings$metric <- 'euclidean'
+custom.settings$min_dist <- 0.5
+# seacell_umap <- umap::umap(rbind(seacell_pca_human_adult[[1]]$x[,1:20],
+#                                 scp1755_projected[,1:20]) , config = custom.settings)
+seacell_umap <- umap::umap(seacell_pca_human_adult[[1]]$x[,1:25], config = custom.settings)
+pdata <- seacell_umap$layout %>% as_tibble(rownames = 'seacell_id') %>% 
+  left_join(meta_mat, by = c('seacell_id')) %>% 
+  mutate(label = paste0(study_accession, '\n',CTP)) %>% 
+  mutate(label = case_when(is.na(CTP) ~ paste0(study_accession, '\n',seacell_id),
+                           TRUE ~ label)) %>% 
+  filter(CellType != 'Enterocyte')
+p <- pdata %>% 
+  ggplot(aes(x=V1,y=V2,color=CellType, label = label)) + 
+  geom_point(size = 0.5) + 
+  cowplot::theme_cowplot() + 
+  scale_color_manual(values = c(pals::glasbey(), pals::alphabet2(), pals::alphabet2()) %>% unname()) +
+  theme(legend.position = 'None')
+p 
+p +   ggrepel::geom_label_repel(data = pdata %>% 
+                              ungroup() %>% 
+                              group_by(CellType) %>% 
+                              summarise(V1 = mean(V1),
+                                        V2 = mean(V2)),
+                            aes(label = CellType)) 
+```
+
+# nmf
+```{r}
+library(RcppML)
+# do not center as that creates negative values
+# do not need to log scale as NMF doesn't require
+# not entirely certain scaling is necessary....some use and some don't
+model <- nmf((seacell_mat[meta_mat_human_adult$seacell_id,
+                                   !grepl('^MT|^RPS|^RPL', colnames(seacell_mat))]), 
+             100, 
+             verbose = TRUE, 
+             seed = c(1), 
+             tol=1e-6)
+
+row.names(model$w) <- meta_mat_human_adult$seacell_id
+colnames(model$w) <- paste0('nmf',seq(1,100))
+model$w %>% as_tibble(rownames = 'seacell_id') %>% 
+  left_join(meta_mat_human_adult) %>% 
+  select(contains('nmf'), CellType) %>% 
+  group_by(CellType) %>% 
+  summarise_all(sum) %>% 
+  pivot_longer(-CellType) %>% 
+  ggplot(aes(x=name, y=value, fill = CellType)) + 
+  geom_bar(stat='identity') + 
+  scale_fill_manual(values = c(pals::glasbey(), pals::alphabet2(), pals::alphabet2()) %>% unname())
+
+model$w %>% as_tibble(rownames = 'seacell_id') %>% 
+  left_join(meta_mat_human_adult) %>% 
+  select(contains('nmf'), CellType) %>% 
+  group_by(CellType) %>% 
+  summarise_all(sum) %>% 
+  pivot_longer(-CellType) %>% filter(CellType == 'RPE') %>% arrange(-value)
+
+seacell_umap2 <- umap::umap((model$w))
+p2 <- seacell_umap2$layout %>% as_tibble(rownames = 'info') %>% 
+  left_join(meta_mat, by = c('info' = 'seacell_id')) %>% 
+  mutate(label = paste0(study_accession, '\n',CTP)) %>% 
+  ggplot(aes(x=V1,y=V2,color=CellType, label = label)) + 
+  geom_point(size = 0.5) + 
+  cowplot::theme_cowplot() + 
+  scale_color_manual(values = c(pals::glasbey(), pals::alphabet2(), pals::alphabet2()) %>% unname())
+plotly::ggplotly(p2)
+
+```
+
+```{r}
+model$w %>% as_tibble(rownames = 'seacell_id') %>% 
+  left_join(meta_mat_human_adult) %>% 
+  select(contains('nmf'), CellType) %>% 
+  group_by(CellType) %>% 
+  summarise_all(sum) %>% 
+  pivot_longer(-CellType) %>% 
+  group_by(name) %>% 
+  slice_max(order_by = value, n = 3) %>% 
+  group_by(CellType) %>% 
+  slice_max(order_by = value, n =1) %>% 
+  DT::datatable()
+```
+
+# nmf pattern expression
+```{r}
+for (i in model$h %>% row.names()){
+  # 5 SD
+  genes <- model$h[i,]  %>% enframe() %>% mutate(svalue = scale(value)) %>% arrange(-svalue) %>% filter(svalue > 5) %>% pull(name)
+  #genes <- model$h['nmf5',] %>% enframe() %>% arrange(-value) %>% head(10) %>% pull(name)
+  print(seacell_umap$layout %>% as_tibble(rownames = 'info') %>% 
+          left_join(seacell_mat[meta_mat_human_adult$seacell_id,genes] %>% 
+                      scale(center = FALSE) %>% rowSums() %>% 
+                      enframe(name = 'info',
+                              value = 'nmf')) %>% 
+          left_join(meta_mat %>% mutate(info = seacell_id)) %>% 
+          ggplot(aes(x=V1,y=V2,color=log2(nmf+1))) + 
+          geom_jitter(size = 1, alpha = 0.5) + 
+          cowplot::theme_cowplot() + 
+          scale_color_viridis_c() +
+          ggtitle(i)
+  )
+} 
+
+```
+
+

@@ -1,0 +1,126 @@
+---
+title: "Example of label projection"
+output: html_notebook
+---
+
+# Acquire the eigenProjectR pre-made list objects
+From [INSERT IN URL]
+```{r}
+#load('~/Downloads/scEiaD_seacell_pca_objs.Rdata')
+# load('inst/data/scEiaD_seacell_pca_objs.Rdata')
+```
+
+# Acquire outside data
+https://singlecell.broadinstitute.org/single_cell/study/SCP1755/joint-scrna-seq-and-scatac-seq-atlas-of-the-adult-human-retina#study-download
+
+Download:
+  - processed_barcodes.tsv.gz 
+  - processed_features.tsv.gz 
+  - processed_matrix.mtx.gz 
+  
+Make folder "SCP1755"
+
+Put those three files into SCP1755 and hand delete the "processed_" part from each of the three names.
+
+Also Download:
+  - scPortal_metadata_file.txt 
+
+# Example of how SCP755 should look (I did this all in my ~/Downloads folder)
+```{r}
+list.files('~/Downloads/test')
+```
+
+
+# Load in SCP755 
+After loading the counts in as a `SingleCellExperiment` object, we then add in the cell type assignments to each cell
+```{r}
+library(tidyverse)
+library(scran)
+library(metamoRph)
+load('../data/scEiaD_seacell_pca_objs_2023_07_10.Rdata')
+# https://singlecell.broadinstitute.org/single_cell/study/SCP1755/joint-scrna-seq-and-scatac-seq-atlas-of-the-adult-human-retina
+# download: processed_barcodes.tsv.gz; processed_features.tsv.gz; processed_matrix.tsv.gz; scPortal_metadata_file.txt
+# hand delete the prefix "processed_" from each file
+# place all four files in a folder of your choice
+scp1755 <- DropletUtils::read10xCounts('~/Downloads/test/')
+scp1755_meta <- read_tsv('~/Downloads/test/scPortal_metadata_file.txt')
+
+scp1755_meta <- scp1755_meta[2:nrow(scp1755_meta),]
+
+colData(scp1755)$NAME <- colnames(assay(scp1755))
+
+colData(scp1755)$celltype <- colData(scp1755) %>% as_tibble() %>% mutate(NAME = Barcode) %>% left_join(scp1755_meta) %>% pull(cell_type__custom)
+
+set.seed(123)
+# splits each celltype randomly into 4 groups
+scp1755_sum_counts <- aggregateAcrossCells(scp1755, paste(colData(scp1755)$celltype, round(runif(20,1,3), 0))) %>% assay()
+#scp1755_sum_counts <- aggregateAcrossCells(scp1755, colData(scp1755)$celltype) %>% assay()
+row.names(scp1755_sum_counts) <- rowData(scp1755)$Symbol
+
+lr_model <- model_build(seacell_pca_human_adult$PCA$x,
+                        seacell_pca_human_adult$meta$CellType,
+                        verbose = FALSE, num_PCs = 50,
+                        model = 'lm')
+
+scp1755_projected <- metamoRph(scp1755_sum_counts,
+                               rotation = seacell_pca_human_adult$PCA$rotation,
+                               center_scale = seacell_pca_human_adult$center_scale)
+
+model_apply(lr_model, scp1755_projected) %>% data.frame() %>% dplyr::select(sample_id, predict, max_score)
+
+# scoring <- model_apply(lr_model, scp1755_projected, return_predictions = TRUE)
+# bind_cols(model_apply(lr_model, scp1755_projected) %>% dplyr::select(sample_id) %>% as_tibble(),
+#           scoring)
+
+# ########################
+custom.settings = umap::umap.defaults
+custom.settings$n_neighbors = 30
+custom.settings$min_dist <- 0.5
+seacell_umap <- umap::umap(rbind(seacell_pca_human_adult$PCA$x,
+                                 scp1755_projected)[,1:50],
+                           config = custom.settings)
+p <- seacell_umap$layout %>% as_tibble(rownames = 'info') %>%
+  left_join(meta_mat %>% ungroup() %>% dplyr::select(seacell_id, study_accession, CellType, CTP), by = c('info' = 'seacell_id')) %>%
+  mutate(label = paste0(info, '\n', study_accession, '\n',CTP)) %>%
+  ggplot(aes(x=V1,y=V2,color=CellType, label = label)) +
+  geom_point(size = 0.5) +
+  cowplot::theme_cowplot() +
+  scale_color_manual(values = c(pals::glasbey(), pals::alphabet2(), pals::alphabet2()) %>% unname())
+plotly::ggplotly(p)
+
+# ################
+#harmony
+
+# harmony_test <- harmony::HarmonyMatrix(rbind(scp1755_projected,
+#                                              seacell_pca_human_adult$PCA$x)[,1:50],
+#                                        do_pca = FALSE,
+#                                        meta_data = c(rep('scp1755', nrow(scp1755_projected)), seacell_pca_human_adult[[1]]$x %>% row.names() %>% gsub('__\\d+','',.)),
+#                                        max.iter.harmony = 1)
+
+batchelor_test <- batchelor::fastMNN(rbind(scp1755_projected,
+                                           seacell_pca_human_adult$PCA$x)[,1:50] %>% as.matrix() %>% t(),
+                                     batch = c(rep('scp1755', nrow(scp1755_projected)), seacell_pca_human_adult[[1]]$x %>% row.names() %>% gsub('__\\d+','',.)),
+                                     d= NA
+) %>% reducedDim()
+
+seacell_umap <- umap::umap(batchelor_test[,1:50], config = custom.settings)
+p <- seacell_umap$layout %>% as_tibble(rownames = 'info') %>%
+  left_join(seacell_summarise, by = c('info' = 'seacell_id')) %>%
+  mutate(label = paste0(info, '\n', study_accession, '\n',CTP)) %>%
+  ggplot(aes(x=V1,y=V2,color=CellType, label = label)) +
+  geom_point(size = 0.5) +
+  cowplot::theme_cowplot() +
+  scale_color_manual(values = c(pals::glasbey(), pals::alphabet2(), pals::alphabet2()) %>% unname())
+plotly::ggplotly(p)
+
+
+lr_model <- model_build(batchelor_test[(nrow(scp1755_projected)+1):nrow(batchelor_test),],
+                        seacell_pca_human_adult$meta$CellType,
+                        verbose = FALSE, num_PCs = 50,
+                        model = 'lm')
+
+model_apply(lr_model, data.frame(batchelor_test[1:nrow(scp1755_projected),])) %>% data.frame()
+
+```
+
+
