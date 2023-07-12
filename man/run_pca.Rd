@@ -31,6 +31,9 @@ will simply use the top n features by variance, and "scran" will use the scran p
 strategy of scaling variance by expression (as highly expressed features/genes) will
 also have higher variance and thus may be less useful for sample distinction.}
 
+\item{hvg_force}{Optional vector of features / genes that must be in the stats::promp
+input}
+
 \item{feature_scale}{Default is TRUE, which means features (genes) are scaled
 with the R::scale function.}
 
