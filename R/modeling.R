@@ -19,8 +19,6 @@
 #' @param verbose Print training status for each label type
 #' @return A list of models for each individual label type
 #' @import BiocParallel
-#' @import tidymodels
-#' @import parsnip
 #' @importFrom stats lm glm binomial
 #' @export
 model_build <- function(training_data,
@@ -55,8 +53,12 @@ model_build <- function(training_data,
     } else if (model == 'glm'){
       model <- glm(labels ~ ., data = data.frame(cbind(labels, training_data)),family = binomial("logit"))
     } else if (model == 'xgboost'){
-      model <- boost_tree(mode = "regression", trees = 200) %>%
-        fit(labels ~ .,
+      if(!requireNamespace("parsnip")){
+        message("This requires the 'parsnip' package.")
+        return(invisible())
+      }
+      model <- parsnip::boost_tree(mode = "regression", trees = 200) %>%
+        parsnip::fit(labels ~ .,
             data = data.frame(cbind(labels,training_data)))
       # } else if (model == 'nnet'){
       #   model <- mlp() %>%
@@ -65,16 +67,24 @@ model_build <- function(training_data,
       #     fit(labels ~ .,
       #         data = data.frame(cbind(labels,training_data)))
     } else if (model == 'rf'){
-      model <-  rand_forest(trees = 500, min_n = 5) %>%
-        set_mode("regression") %>%
-        set_engine("ranger") %>%
-        fit(labels ~ .,
+      if(!requireNamespace("parsnip")){
+        message("This requires the 'parsnip' package.")
+        return(invisible())
+      }
+      model <-  parsnip::rand_forest(trees = 500, min_n = 5) %>%
+        parsnip::set_mode("regression") %>%
+        parsnip::set_engine("ranger") %>%
+        parsnip::fit(labels ~ .,
             data = data.frame(cbind(labels,training_data)))
     } else if (model == 'svm'){
-      model <- svm_linear(cost = 1, margin = 0.1) %>%
-        set_mode("regression") %>%
-        set_engine("LiblineaR") %>%
-        fit(labels ~ .,
+      if(!requireNamespace("parsnip")){
+        message("This requires the 'parsnip' package.")
+        return(invisible())
+      }
+      model <- parsnip::svm_linear(cost = 1, margin = 0.1) %>%
+        parsnip::set_mode("regression") %>%
+        parsnip::set_engine("LiblineaR") %>%
+        parsnip::fit(labels ~ .,
             data = data.frame(cbind(labels,training_data)))
     }
     return(list(target = target, model = model))
