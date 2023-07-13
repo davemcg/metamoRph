@@ -62,9 +62,10 @@
 <div class="page-header"><h1 id="metamorph">metamoRph<a class="anchor" aria-label="anchor" href="#metamorph"></a>
 </h1></div>
 <p>A framework (or “guardrails”) for projecting new data onto an reference PCA space. This can be a two step process where the user runs our <code>run_pca</code> function (which wraps <code>prcomp</code> and provides some sensible defaults and enhanced outputs. After <code>run_pca</code> the user can then use <code>metamoRph</code> to project new data onto the existing PCA.</p>
-<div class="section level2">
-<h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
-</h2>
+</div>
+<div class="section level1">
+<h1 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
+</h1>
 <pre><code><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"davemcg/metamoRph"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davemcg.github.io/metamoRph/">metamoRph</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
@@ -97,22 +98,37 @@
 <span>                               <span class="va">mm_pca</span><span class="op">$</span><span class="va">PCA</span><span class="op">$</span><span class="va">rotation</span>, </span>
 <span>                               center_scale <span class="op">=</span> <span class="va">mm_pca</span><span class="op">$</span><span class="va">center_scale</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">mm_pca</span><span class="op">$</span><span class="va">PCA</span><span class="op">$</span><span class="va">x</span>, rownames <span class="op">=</span> <span class="st">'samples'</span><span class="op">)</span>,</span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="op">(</span><span class="va">projected_pca</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>samples <span class="op">=</span> <span class="st">'Cornea'</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>samples <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">'\\d'</span>,<span class="st">''</span>,<span class="va">samples</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x<span class="op">=</span><span class="va">PC1</span>,y<span class="op">=</span><span class="va">PC2</span>,color<span class="op">=</span><span class="va">samples</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/theme_cowplot.html" class="external-link">theme_cowplot</a></span><span class="op">(</span><span class="op">)</span></span></code></pre>
+<span><span class="co"># bind_rows(as_tibble(mm_pca$PCA$x, rownames = 'samples'),</span></span>
+<span><span class="co">#       data.frame((projected_pca)) |&gt;mutate(samples = 'Cornea')) |&gt;</span></span>
+<span><span class="co">#   mutate(samples = gsub('\\d','',samples)) |&gt;</span></span>
+<span><span class="co">#   ggplot(aes(x=PC1,y=PC2,color=samples)) + </span></span>
+<span><span class="co">#   geom_point() +</span></span>
+<span><span class="co">#   cowplot::theme_cowplot()</span></span></code></pre>
+<div class="section level2">
+<h2 id="label-projection">Label projection<a class="anchor" aria-label="anchor" href="#label-projection"></a>
+</h2>
+<pre><code><span><span class="co"># continue from code chunk above</span></span>
+<span><span class="co">## WARNING: Use many more num_PCs (20+) for "real" genomic data</span></span>
+<span><span class="va">trained_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/model_build.html">model_build</a></span><span class="op">(</span><span class="va">mm_pca</span><span class="op">$</span><span class="va">PCA</span><span class="op">$</span><span class="va">x</span>,</span>
+<span>                             <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">'\\d+'</span>,<span class="st">''</span>, <span class="va">mm_pca</span><span class="op">$</span><span class="va">meta</span><span class="op">$</span><span class="va">samples</span><span class="op">)</span>, <span class="co">#remove trailing digit </span></span>
+<span>                             model <span class="op">=</span> <span class="st">'lm'</span>, num_PCs <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">label_guesses</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/model_apply.html">model_apply</a></span><span class="op">(</span><span class="va">trained_model</span>,</span>
+<span>                             <span class="va">projected_pca</span>,</span>
+<span>                             <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cornea"</span>,<span class="st">"Cornea"</span>,<span class="st">"Cornea"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># label_guesses</span></span></code></pre>
 <p>It is also possible to use a pre-existing prcomp object directly with <code>metamoRph</code>.</p>
 </div>
-</div>
-<div class="section level1">
-<h1 id="existing-prcomp-object-projection-example-pseudocode-ish">Existing prcomp object projection example (pseudocode-ish)<a class="anchor" aria-label="anchor" href="#existing-prcomp-object-projection-example-pseudocode-ish"></a>
-</h1>
+<div class="section level2">
+<h2 id="existing-prcomp-object-projection-example-pseudocode-ish">Existing prcomp object projection example (pseudocode-ish)<a class="anchor" aria-label="anchor" href="#existing-prcomp-object-projection-example-pseudocode-ish"></a>
+</h2>
 <pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davemcg.github.io/metamoRph/">metamoRph</a></span><span class="op">)</span></span>
 <span><span class="va">projected_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/metamoRph.html">metamoRph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">)</span>, </span>
 <span>                               <span class="va">your_prcomp_object</span><span class="op">$</span><span class="va">PCA</span><span class="op">$</span><span class="va">rotation</span>, </span>
 <span>                               center_scale <span class="op">=</span> <span class="fu"><a href="reference/extract_prcomp_scaling.html">extract_prcomp_scaling</a></span><span class="op">(</span><span class="va">your_prcomp_object</span><span class="op">)</span><span class="op">)</span></span></code></pre>
+</div>
 </div>
 
   </main><aside class="col-md-3"><div class="license">
