@@ -2,7 +2,7 @@
 
 A framework (or "guardrails") for projecting new data onto an reference PCA space. This can be a two step process where the user runs our `run_pca` function (which wraps `prcomp` and provides some sensible defaults and enhanced outputs. After `run_pca` the user can then use `metamoRph` to project new data onto the existing PCA. 
 
-## Quick Start
+# Quick Start
 ```
 remotes::install_github("davemcg/metamoRph")
 library(metamoRph)
@@ -36,17 +36,33 @@ projected_pca <- metamoRph(t(new_data),
                                mm_pca$PCA$rotation, 
                                center_scale = mm_pca$center_scale)
 
-bind_rows(as_tibble(mm_pca$PCA$x, rownames = 'samples'),
-      data.frame((projected_pca)) |>mutate(samples = 'Cornea')) |>
-  mutate(samples = gsub('\\d','',samples)) |>
-  ggplot(aes(x=PC1,y=PC2,color=samples)) + 
-  geom_point() +
-  cowplot::theme_cowplot()
+# bind_rows(as_tibble(mm_pca$PCA$x, rownames = 'samples'),
+#       data.frame((projected_pca)) |>mutate(samples = 'Cornea')) |>
+#   mutate(samples = gsub('\\d','',samples)) |>
+#   ggplot(aes(x=PC1,y=PC2,color=samples)) + 
+#   geom_point() +
+#   cowplot::theme_cowplot()
+```
+
+## Label projection
+```
+# continue from code chunk above
+## WARNING: Use many more num_PCs (20+) for "real" genomic data
+trained_model <- model_build(mm_pca$PCA$x,
+                             mm_pca$meta$samples,
+                             model = 'lm', num_PCs = 2)
+
+label_guesses <- model_apply(trained_model,
+                             projected_pca,
+                             c("Cornea","Cornea","Cornea")
+)
+
+# label_guesses
 ```
 
 It is also possible to use a pre-existing prcomp object directly with `metamoRph`.
 
-# Existing prcomp object projection example (pseudocode-ish)
+## Existing prcomp object projection example (pseudocode-ish)
 ```
 library(metamoRph)
 projected_pca <- metamoRph(t(new_data), 
