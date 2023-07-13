@@ -1,0 +1,19 @@
+---
+title: "outside_single_cell_projection"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{outside_single_cell_projection}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(eigenProjectR)
+```

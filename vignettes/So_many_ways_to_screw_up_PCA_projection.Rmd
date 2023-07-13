@@ -1,0 +1,245 @@
+---
+title: "So many ways to screw up PCA projection"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{So many ways to screw up PCA projection}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE,  warning = FALSE,
+  collapse = TRUE,
+  fig.width = 5, fig.height = 2.5,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+When you run `prcomp` you get two matrices back: `$x` and `$rotation`. The former
+is the "pattern matrix" which are the factors (principal components) by samples. 
+The latter is the amplitude matrix, which are the loadings of the features (genes)
+with the factors (principal compoent); row by column, respectively. 
+
+In *theory* you can use a rotation (loadings) matrix from prcomp (the `$rotation` slot)
+to multiply against a new matrix to get the new matrix in the same eigenvector space
+as the original matrix. 
+
+This is handy! This means you can use an existing PCA you understand and have spent time
+interpreting and transfer that knowledge onto new data.
+
+In *practice*, though, there a wide variety of reasons this can fail. Let us explore why.
+
+# Toy Data
+
+Let's make a tiny little faux dataset. Threetissue types with five genes. We `log1p` scale
+the data as raw gene counts are skewed, run `prcomp`, then plot the first two principal
+components (PC). They do a nice job turning three major axes of variation into two informative
+eigenvalues/PCs.
+
+```{r, fig.width=4, fig.height=3}
+library(dplyr)
+library(ggplot2)
+
+genes <- c('RHO','RPE65','ABCA4','PMEL', 'KRT5')
+samples <- c('Retina1','Retina2','RPE1','RPE2','Cornea1')
+
+faux_mat <- cbind(c(560,650,5,6,0), # rho
+                  c(42,32, 1103,1201,2), #rpe65
+                  c(810,903,202,205,45),  #abca4
+                  c(100,105,2004,1980,101),# pmel
+                  c(3,32,101,202,1567)) |> data.frame()# krt5
+colnames(faux_mat) <- genes
+row.names(faux_mat) <- samples
+
+faux_pca <- prcomp(log1p(faux_mat), scale = TRUE, center = TRUE)
+
+faux_pca$x |>
+  as_tibble(rownames = 'samples') |>
+  mutate(samples = gsub('\\d','',samples)) |>
+  ggplot(aes(x=PC1,y=PC2,color=samples)) + 
+  geom_point() +
+  cowplot::theme_cowplot()
+
+
+```
+
+## Matrix Multiplication
+
+The pattern matrix (plotted above) can be recreated by multiplying
+the input_matrix by the rotation matrix (the `$rotation` slot). 
+
+Wait, that's wrong....the numbers are very different. PC1 should range from about -2 to 2, but now 
+runs from -5 to 3.
+```{r}
+as.matrix(log1p(faux_mat)) %*% faux_pca$rotation
+```
+What happened? If we investigate the `prcomp` documentation we see that the input data, by default,
+is scaled across the features. If we apply the `scale` function to our log1p scaled `faux_mat` we get a matrix which exactly matches the prcomp `$x` slot.
+```{r}
+scale(log1p(faux_mat)) %*% faux_pca$rotation
+
+(scale(log1p(faux_mat)) %*% faux_pca$rotation) == faux_pca$x
+```
+
+## Three fake cornea tissues
+
+Now we have new data. Three cornea samples. We want to compare these new cornea samples to our existing PCA
+to see how they compare. As discussed above, we *should* be able to just matrix multiply this new matrix against the original pca `$loading` slot to put the new data in the same PC space.
+```{r}
+new_data <- cbind(c(5,6,3), # rho
+                  c(32,23,54), #rpe65
+                  c(65,22,10),  #abca4
+                  c(122,101,57),# pmel
+                  c(2567,1755,2218)) # krt5
+colnames(new_data) <- genes
+row.names(new_data) <- c("Cornea2","Cornea3","Cornea4")
+
+```
+
+# OK, let's try projecting some new data!
+
+We apply all of knowledge and scale the new data before we matrix multiply it
+against the rotation matrix. 
+
+What the? The three new samples are ... in the middle??? Why??????
+```{r, fig.width=4, fig.height=3}
+
+new_project <- scale(log1p(new_data)) %*% faux_pca$rotation
+
+# we bind rows to glue together the original PCA (faux_pca$x)
+# with the new data's PC space (new_project)
+bind_rows(as_tibble(faux_pca$x, rownames = 'samples'),
+      as_tibble(new_project, rownames = 'samples')) |>
+  mutate(samples = gsub('\\d','',samples)) |>
+  ggplot(aes(x=PC1,y=PC2,color=samples)) + 
+  geom_point() +
+  cowplot::theme_cowplot()
+```
+
+# What scale does
+
+`scale` takes the columns and, by default, will center (mean 0) and scale (divide by the standard deviation). 
+
+The issue is that because you only have *one* sample type with fairly *similar* expression patterns
+across all the genes, the scaling turns *everything* into similar values. Which centers them around 0, in effect when multiplying
+by the `prcomp` rotation matrix.
+
+```{r}
+scale(new_data)
+```
+# How to fix?
+## with stats::predict
+
+If you use the `stats::predict` tool, then it will use the scaling information
+in the `prcomp` object to scale your new data with the same scale and center values
+used in in the `prcomp` scale/center steps.
+
+```{r, fig.width=4, fig.height=3}
+with_predict <- predict(faux_pca, (log1p(new_data)))
+
+bind_rows(as_tibble(faux_pca$x, rownames = 'samples'),
+      as_tibble(with_predict, rownames = 'samples')) |>
+  mutate(samples = gsub('\\d','',samples)) |>
+  ggplot(aes(x=PC1,y=PC2,color=samples)) + 
+  geom_point() +
+  cowplot::theme_cowplot()
+```
+
+# Yay all is well in the world!
+
+## plot twist
+In RNA-seq data it is common to have wildly different sum counts. That is because a sequencing 
+machine can create 10,000,000 reads for one sample or 100,000,000 reads. Or even more! 
+
+Let's try `stats::prcomp` again with the same new_data, just scaled up 10x.
+
+Well ugh, look, now the new cornea samples look like the RPE!!!!!
+```{r, fig.width=4, fig.height=3}
+with_predict <- predict(faux_pca, (log1p(new_data*10)))
+
+bind_rows(as_tibble(faux_pca$x, rownames = 'samples'),
+      as_tibble(with_predict, rownames = 'samples')) |>
+  mutate(samples = gsub('\\d','',samples)) |>
+  ggplot(aes(x=PC1,y=PC2,color=samples)) + 
+  geom_point() +
+  cowplot::theme_cowplot()
+```
+
+## OK, so this is fixable....
+
+You can either re-do the original PCA with a fixed sample scale (like cpm) and/or alter the new data to 
+have a similar scale to the input data PCA.
+
+But to recap, at this point we have discussed several issues that can make
+data projection challenging:
+
+1. log scaling of input data
+2. log scaling of new data
+3. row scaling (feature/genes) within prcomp needs to be applied in the same way to the new data
+4. unequal sum counts of the samples need to be normalized either at the first `prcomp` step or by adjusting 
+the new data 
+
+There are even *more* little annoyances that I have not discussed:
+
+5. highly variable gene selection is usually done so you don't do PCA on 20,000+ genes. 
+  - this means that the new data needs to be exactly matched at the feature/gene level to whatever 
+  the highly variable genes used in the prcomp step
+6. if you are using a new a RNA seq dataset from a different quantification setup than the original data the gene names can be slightly different, which means you may have a handful of missing features/genes that have to be addressed in some way otherwise the matrix multiplication will fail...
+
+# wow, if only someone wrote a R package that could handle all of the issues so I can get on with my analysis!
+
+## Good news, I did: [metamoRph](www.github.com/davemcg/metamoRph)
+
+There are two steps:
+
+1. A `run_pca` wrapper around `prcomp` which, by default, will:
+  - CPM scale the samples
+  - log1p scale the data
+  - remove zero count genes
+  - row scale and center the genes
+  - tries to remove mitochondrial and ribosomal genes which are often not useful for scRNA analysis
+  - offers two ways to select highly variable genes: "scran" which uses a count scaled variance 
+  selection approach (higher expressed genes/features will naturally have higher variance) or the 
+  "classic" approach which just uses `matrixStats::rowVar` 
+  - calculates the % standard deviation explained by each PC
+  - returns a list object with the prcomp object, the parameters chosen, the center/scale values, and
+  the % standard deviation explained by each PC
+2. `metamoRph` function which takes two or three inputs:
+  - your new counts matrix
+  - the `$rotation` matrix from `prcomp`
+  - optionally the center/scale values from `prcomp`
+  
+and then 
+
+  - will align the feature/gene names from the input data to the rotation matrix
+  - scale the data in all directions discussed above
+  - return the `$x` equivalent PC space
+  
+Let's see it in practice with the 10x scaled input data that tripped up `stats::predict`
+
+There two only two steps:
+
+1. `run_pca` which runs the prcomp with the settings discussed above
+2. `metamoRph` which takes the new data and projects it onto the `mm_pca` space
+
+```{r, fig.width=4, fig.height=3}
+library(metamoRph)
+mm_pca <- run_pca(t(faux_mat), meta = samples |> data.frame())
+projected_pca <- metamoRph(t(new_data*10), 
+                               mm_pca$PCA$rotation, 
+                               center_scale = mm_pca$center_scale)
+
+bind_rows(as_tibble(faux_pca$x, rownames = 'samples'),
+      as_tibble(projected_pca, rownames = 'samples')) |>
+  mutate(samples = gsub('\\d','',samples)) |>
+  ggplot(aes(x=PC1,y=PC2,color=samples)) + 
+  geom_point() +
+  cowplot::theme_cowplot()
+```
+
+```{r}
+sessionInfo()
+```

@@ -1,0 +1,49 @@
+---
+title: "Project scEiaD retina labels onto outside data"
+vignette: >
+  %\VignetteIndexEntry{Project_scEiaD_retina_labels_onto_outside_data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r setup}
+library(dplyr)
+library(scran)
+library(metamoRph)
+```
+
+# Load scEiaD MetaCell PCA data
+```{r}
+load('inst/data/scEiaD_seacell_pca_objs.Rdata')
+scp1755 <- DropletUtils::read10xCounts('~/Downloads/SCP1755/')
+scp1755_meta <- read_tsv('~/Downloads/SCP1755_scPortal_metadata_file.txt')
+
+scp1755_meta <- scp1755_meta[2:nrow(scp1755_meta),]
+
+colData(scp1755)$NAME <- colnames(assay(scp1755))
+
+colData(scp1755)$celltype <- colData(scp1755) %>% as_tibble() %>% mutate(NAME = Barcode) %>% left_join(scp1755_meta) %>% pull(cell_type__custom)
+
+scp1755_sum_counts <- aggregateAcrossCells(scp1755, colData(scp1755)$celltype) %>% assay()
+row.names(scp1755_sum_counts) <- rowData(scp1755)$Symbol
+
+scp1755_projected <- metamoRph(scp1755_sum_counts, rotation = seacell_pca_human_adult$PCA$rotation)
+
+
+lr_model <- model_build(seacell_pca_human_adult$PCA$x[,1:200],
+                        seacell_pca_human_adult$meta$CellType,
+                        BPPARAM = BiocParallel::MulticoreParam(4), verbose = FALSE)
+
+model_apply(lr_model, scp1755_projected)
+
+
+
+```

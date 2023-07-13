@@ -1,4 +1,3 @@
-^eigenProjectR\.Rproj$
 ^\.Rproj\.user$
 ^inst/data$
 .*h5ad$
@@ -7,3 +6,5 @@
 ^docs$
 ^pkgdown$
 ^\.github$
+^metamoRph\.Rproj$
+^vignettes/figure$

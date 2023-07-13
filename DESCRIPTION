@@ -11,14 +11,12 @@ LazyData: true
 biocViews:
 Imports:
   BiocParallel,
-  edgeR,
   matrixStats,
-  parsnip,
+  dplyr,
+  edgeR,
   scran,
   SingleCellExperiment,
-  dplyr,
   tibble,
-  tidymodels,
   tidyr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
@@ -28,8 +26,10 @@ Suggests:
   ggforce,
   ggplot2,
   pals,
+  parsnip,
   projectR,
   knitr,
-  rmarkdown
+  rmarkdown,
+  tidymodels
 VignetteBuilder: knitr
 URL: https://davemcg.github.io/metamoRph/
