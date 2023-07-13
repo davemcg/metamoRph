@@ -49,7 +49,7 @@ projected_pca <- metamoRph(t(new_data),
 # continue from code chunk above
 ## WARNING: Use many more num_PCs (20+) for "real" genomic data
 trained_model <- model_build(mm_pca$PCA$x,
-                             mm_pca$meta$samples,
+                             gsub('\\d+','', mm_pca$meta$samples), #remove trailing digit 
                              model = 'lm', num_PCs = 2)
 
 label_guesses <- model_apply(trained_model,
