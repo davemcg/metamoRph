@@ -107,7 +107,9 @@ data_plot %>%
   ggplot(aes(x=PC1,y=PC2,color = Tissue)) +
   geom_point() +
   scale_color_manual(values = pals::alphabet(n=12) %>% unname()) +
-  ggforce::geom_mark_circle(data = data_plot %>% filter(Data == 'Projection'), color = 'red', expand = unit(2,"mm"), size = 2) +
+  ggforce::geom_mark_ellipse(data = data_plot %>% filter(Data == 'Projection'), color = 'red', size = 2) +
+  ggforce::geom_mark_ellipse() +
+  
   cowplot::theme_cowplot()
 ```
 
@@ -137,7 +139,8 @@ data_plot %>%
   ggplot(aes(x=PC1,y=PC2,color = Tissue)) +
   geom_point() +
   scale_color_manual(values = pals::alphabet(n=12) %>% unname()) +
-  ggforce::geom_mark_circle(data = data_plot %>% filter(Data == 'Projection'), color = 'red', expand = unit(2,"mm"), size = 2) +
+  ggforce::geom_mark_ellipse(data = data_plot %>% filter(Data == 'Projection'), color = 'red', size = 2) +
+    ggforce::geom_mark_ellipse() +
   cowplot::theme_cowplot()
 ```
 

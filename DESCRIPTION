@@ -21,15 +21,17 @@ Imports:
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Suggests: 
-  cowplot,
-  data.table,
-  ggforce,
-  ggplot2,
-  pals,
-  parsnip,
-  projectR,
-  knitr,
-  rmarkdown,
-  tidymodels
+    cowplot,
+    data.table,
+    ggforce,
+    ggplot2,
+    pals,
+    parsnip,
+    projectR,
+    knitr,
+    rmarkdown,
+    tidymodels,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
 URL: https://davemcg.github.io/metamoRph/
+Config/testthat/edition: 3

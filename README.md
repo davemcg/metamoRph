@@ -1,8 +1,11 @@
 # metamoRph
 
-A framework (or "guardrails") for projecting new data onto an reference PCA space. This can be a two step process where the user runs our `run_pca` function (which wraps `prcomp` and provides some sensible defaults and enhanced outputs. After `run_pca` the user can then use `metamoRph` to project new data onto the existing PCA. 
+A framework for projecting new data onto an reference PCA space. This can be a two step process where the user runs our `run_pca` function (which wraps `prcomp` and provides some sensible defaults and enhanced outputs. After `run_pca` the user can then use `metamoRph` to project new data onto the existing PCA. 
+
+We also provides two functions, `model_build` and `model_apply` to quickly transfer metadata onto new data using the shared PCA space.
 
 # Quick Start
+
 ```
 remotes::install_github("davemcg/metamoRph")
 library(metamoRph)
@@ -30,14 +33,14 @@ new_data <- cbind(c(5,6,3), # rho
 colnames(new_data) <- genes
 row.names(new_data) <- c("Cornea2","Cornea3","Cornea4")
 
-
 mm_pca <- run_pca(t(faux_mat), meta = samples |> data.frame())
 projected_pca <- metamoRph(t(new_data), 
                                mm_pca$PCA$rotation, 
                                center_scale = mm_pca$center_scale)
 
+# example plot
 # bind_rows(as_tibble(mm_pca$PCA$x, rownames = 'samples'),
-#       data.frame((projected_pca)) |>mutate(samples = 'Cornea')) |>
+#       as_tibble(projected_pca, rownames = 'Cornea')) |>
 #   mutate(samples = gsub('\\d','',samples)) |>
 #   ggplot(aes(x=PC1,y=PC2,color=samples)) + 
 #   geom_point() +
@@ -60,14 +63,22 @@ label_guesses <- model_apply(trained_model,
 # label_guesses
 ```
 
-It is also possible to use a pre-existing prcomp object directly with `metamoRph`.
+
 
 ## Existing prcomp object projection example (pseudocode-ish)
+
+It is also possible to use a pre-existing prcomp object with `metamoRph`, skipping
+the `run_pca` step. You will have to ensure that you sample scale your `new_data`
+in the same manner that you used for your `prcomp` run (here we use `log2` - but replace
+with whatever scaling your have done. Maybe none?). Note how we have turned
+off the cpm and log1p scaling in the `metamoRph` function.
+
 ```
 library(metamoRph)
-projected_pca <- metamoRph(t(new_data), 
+projected_pca <- metamoRph(t(log2(new_data)), 
                                your_prcomp_object$PCA$rotation, 
-                               center_scale = extract_prcomp_scaling(your_prcomp_object))
+                               center_scale = extract_prcomp_scaling(your_prcomp_object),
+                               sample_cpm_scale = FALSE, log1p = FALSE)
 ```
 
 
