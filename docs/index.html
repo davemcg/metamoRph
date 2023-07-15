@@ -61,7 +61,8 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="metamorph">metamoRph<a class="anchor" aria-label="anchor" href="#metamorph"></a>
 </h1></div>
-<p>A framework (or “guardrails”) for projecting new data onto an reference PCA space. This can be a two step process where the user runs our <code>run_pca</code> function (which wraps <code>prcomp</code> and provides some sensible defaults and enhanced outputs. After <code>run_pca</code> the user can then use <code>metamoRph</code> to project new data onto the existing PCA.</p>
+<p>A framework for projecting new data onto an reference PCA space. This can be a two step process where the user runs our <code>run_pca</code> function (which wraps <code>prcomp</code> and provides some sensible defaults and enhanced outputs. After <code>run_pca</code> the user can then use <code>metamoRph</code> to project new data onto the existing PCA.</p>
+<p>We also provides two functions, <code>model_build</code> and <code>model_apply</code> to quickly transfer metadata onto new data using the shared PCA space.</p>
 </div>
 <div class="section level1">
 <h1 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
@@ -92,14 +93,14 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">genes</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/row.names.html" class="external-link">row.names</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cornea2"</span>,<span class="st">"Cornea3"</span>,<span class="st">"Cornea4"</span><span class="op">)</span></span>
 <span></span>
-<span></span>
 <span><span class="va">mm_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_pca.html">run_pca</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">faux_mat</span><span class="op">)</span>, meta <span class="op">=</span> <span class="va">samples</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">projected_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/metamoRph.html">metamoRph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">)</span>, </span>
 <span>                               <span class="va">mm_pca</span><span class="op">$</span><span class="va">PCA</span><span class="op">$</span><span class="va">rotation</span>, </span>
 <span>                               center_scale <span class="op">=</span> <span class="va">mm_pca</span><span class="op">$</span><span class="va">center_scale</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># example plot</span></span>
 <span><span class="co"># bind_rows(as_tibble(mm_pca$PCA$x, rownames = 'samples'),</span></span>
-<span><span class="co">#       data.frame((projected_pca)) |&gt;mutate(samples = 'Cornea')) |&gt;</span></span>
+<span><span class="co">#       as_tibble(projected_pca, rownames = 'Cornea')) |&gt;</span></span>
 <span><span class="co">#   mutate(samples = gsub('\\d','',samples)) |&gt;</span></span>
 <span><span class="co">#   ggplot(aes(x=PC1,y=PC2,color=samples)) + </span></span>
 <span><span class="co">#   geom_point() +</span></span>
@@ -119,15 +120,16 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># label_guesses</span></span></code></pre>
-<p>It is also possible to use a pre-existing prcomp object directly with <code>metamoRph</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="existing-prcomp-object-projection-example-pseudocode-ish">Existing prcomp object projection example (pseudocode-ish)<a class="anchor" aria-label="anchor" href="#existing-prcomp-object-projection-example-pseudocode-ish"></a>
 </h2>
+<p>It is also possible to use a pre-existing prcomp object with <code>metamoRph</code>, skipping the <code>run_pca</code> step. You will have to ensure that you sample scale your <code>new_data</code> in the same manner that you used for your <code>prcomp</code> run (here we use <code>log2</code> - but replace with whatever scaling your have done. Maybe none?). Note how we have turned off the cpm and log1p scaling in the <code>metamoRph</code> function.</p>
 <pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davemcg.github.io/metamoRph/">metamoRph</a></span><span class="op">)</span></span>
-<span><span class="va">projected_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/metamoRph.html">metamoRph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">)</span>, </span>
+<span><span class="va">projected_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/metamoRph.html">metamoRph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">)</span><span class="op">)</span>, </span>
 <span>                               <span class="va">your_prcomp_object</span><span class="op">$</span><span class="va">PCA</span><span class="op">$</span><span class="va">rotation</span>, </span>
-<span>                               center_scale <span class="op">=</span> <span class="fu"><a href="reference/extract_prcomp_scaling.html">extract_prcomp_scaling</a></span><span class="op">(</span><span class="va">your_prcomp_object</span><span class="op">)</span><span class="op">)</span></span></code></pre>
+<span>                               center_scale <span class="op">=</span> <span class="fu"><a href="reference/extract_prcomp_scaling.html">extract_prcomp_scaling</a></span><span class="op">(</span><span class="va">your_prcomp_object</span><span class="op">)</span>,</span>
+<span>                               sample_cpm_scale <span class="op">=</span> <span class="cn">FALSE</span>, log1p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre>
 </div>
 </div>
 
