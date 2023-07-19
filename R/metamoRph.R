@@ -27,6 +27,7 @@
 #' the output of prcomp)
 #' @import dplyr
 #' @import tidyr
+#' @import Matrix
 #' @importFrom tibble enframe
 #' @importFrom stats prcomp
 #' @export
@@ -36,19 +37,19 @@ metamoRph <- function(new_counts,
                       sample_cpm_scale = TRUE,
                       log1p = TRUE){
   value <- ensgene <- name <- NULL # https://www.r-bloggers.com/2019/08/no-visible-binding-for-global-variable/
-
+  
   new_cpm <- new_counts # in case no sample scaling is selected
-
+  
   if (sample_cpm_scale){
     message("Sample CPM scaling")
-    new_cpm <- edgeR::cpm(new_counts, log = FALSE)
+    new_cpm <- scuttle::calculateCPM(new_counts)
   }
-
+  
   if (log1p){
     message("Sample log1p scaling")
     new_cpm <- new_cpm |> log1p()
   }
-
+  
   # extract gene names from new data and make upper case
   row_genes <- row.names(new_cpm) |> toupper()
   row.names(new_cpm) <- row_genes
@@ -61,7 +62,7 @@ metamoRph <- function(new_counts,
                      mutate(ensgene = gsub(")", "", ensgene)) |> dplyr::select(-name))
   overlap_with_ID <- row_genes[row_genes %in% feature_id_table$feature_id]
   overlap_with_ens <- row_genes[row_genes %in% feature_id_table$ensgene]
-
+  
   if ((length(overlap_with_ID) < 2) &
       (length(overlap_with_ens) < 2)){
     stop("Failure to align gene (feature) names, please check your
@@ -75,7 +76,7 @@ metamoRph <- function(new_counts,
       column_val <- 2
     }
   }
-
+  
   # Only genes that match the rotation/eigenvalues genes used
   feature_universe <- feature_id_table |> pull(column_val) |> make.unique()
   feature_universe[feature_universe == ''] = 'X'
@@ -89,27 +90,27 @@ metamoRph <- function(new_counts,
   row.names(data) <- not_included
   colnames(data) <- colnames(cutdown)
   cutdown <- rbind(cutdown, data)
-
+  
   # Match order of feature_ids from reference PCA
   ## ensure the input data is in the
   ## same order as the rotation matrix
   cutdown <- cutdown[feature_universe, , drop = FALSE]
-
+  
   if (!missing(center_scale)){
     message("Applying custom scaling")
-    scaled_cutdown <- scale(t(cutdown), center_scale$center,
+    scaled_cutdown <- scale(Matrix::t(cutdown), center_scale$center,
                             center_scale$scale)
   } else{
-    scaled_cutdown <- t(cutdown)
+    scaled_cutdown <- Matrix::t(cutdown)
   }
   # Replace NAs with 0
   scaled_cutdown[is.na(scaled_cutdown)] <- 0
-
+  
   # project new data onto the PCA space
   ## matrix multiply the expression of the scaled new data against
   ## the supplied eigenvector
   projected_PC_space <- scaled_cutdown %*% rotation |> as.data.frame()
-
+  
   return((projected_PC_space))
 }
 
@@ -134,17 +135,19 @@ metamoRph <- function(new_counts,
 #' @param feature_scale Default is TRUE, which means features (genes) are scaled
 #' with the R::scale function.
 #' @param feature_center Default is TRUE, which means features (genes) are centered
-#' @param sample_cpm_scale Default is TRUE; performs cpm scaling on the samples with the edgeR::cpm function.
+#' @param sample_cpm_scale Default is TRUE; performs cpm scaling on the samples with the scuttle::scuttle::calculateCPM() function.
 #' @param log1p Default is TRUE; applies log1p scaling to the input count matrix.
 #' @param remove_regex Default regex pattern is '^MT|^RPS|^RPL'. Set to '' to skip.
 #' @return A named list object with the prcomp output returned under the $PCA slot, the given
 #' metadata under the $meta slot, the percent variance of each PC as the
 #' $percentVar slot, a list object containing the scaled data's "center" and "scale"
-#' values for use in the metamoRph function, and the used parameters under the $params slot.
+#' values for use in the metamoRph function, and the used parameters under the $params slot.\
+#' @import Matrix 
 #' @importFrom utils head
 #' @importFrom matrixStats rowVars
 #' @importFrom SingleCellExperiment SingleCellExperiment
 #' @importFrom scran modelGeneVar
+#' @importFrom sparseMatrixStats rowVars
 #' @importFrom stats prcomp
 #' @export
 run_pca <- function(feature_by_sample,
@@ -158,27 +161,31 @@ run_pca <- function(feature_by_sample,
                     log1p = TRUE,
                     remove_regex = '^MT|^RPS|^RPL') {
   bio <- Gene <- NULL # https://www.r-bloggers.com/2019/08/no-visible-binding-for-global-variable/
-
+  
   # Remove genes with a regex
   # if given as empty, then skip
   if (remove_regex != ''){
     feature_by_sample <- feature_by_sample[!grepl(remove_regex, row.names(feature_by_sample)),]
   }
-
+  
   # Remove zero count features/genes
-  row_sums <- rowSums(feature_by_sample)
+  row_sums <- Matrix::rowSums(feature_by_sample)
   feature_by_sample <- feature_by_sample[row_sums > 0,]
-
+  
   if (sample_cpm_scale) {
-    feature_by_sample <- edgeR::cpm(feature_by_sample, log = FALSE)
+    feature_by_sample <- scuttle::calculateCPM(feature_by_sample)
   }
-
+  
   if (log1p) {
     feature_by_sample <- feature_by_sample |> log1p()
   }
-
+  
   if (hvg_selection == 'classic') {
-    Pvars <- rowVars(feature_by_sample)
+    if ('dgCMatrix' %in% class(feature_by_sample)) {
+      Pvars <- sparseMatrixStats::rowVars(feature_by_sample)
+    } else {
+      Pvars <- rowVars(feature_by_sample)
+    }
     names(Pvars) <- row.names(feature_by_sample)
     select <- sort(Pvars, decreasing = TRUE)[seq_len(min(ntop, length(Pvars)))] |> names()
   } else if (hvg_selection == 'scran') {
@@ -189,7 +196,7 @@ run_pca <- function(feature_by_sample,
   } else {
     stop("Select either classic or scran for hvg_selection please")
   }
-
+  
   if (length(hvg_force) > 0){
     # add in user required features
     select <- c(select, hvg_force)
@@ -197,19 +204,19 @@ run_pca <- function(feature_by_sample,
     #   stop("Requested feature / gene not in your input matrix!")
     # }
   }
-
+  
   # Rotate
-  sample_by_feature <- t(feature_by_sample[select,])
+  sample_by_feature <- Matrix::t(feature_by_sample[select,])
+  
   # finally doing the PCA!
   PCA <- prcomp(sample_by_feature, scale = feature_scale, center = feature_center)
   # yank out the center and scale values to place
   # at the top level of the output list object
-  center_scale <- list(center = PCA$center,
-                       scale = PCA$scale)
-
+  center_scale <- extract_prcomp_scaling(PCA)
+  
   # Calculate percent variance explained by each PC
   percentVar <- round(100 * PCA$sdev^2 / sum(PCA$sdev^2), 1)
-
+  
   out <- list(PCA = PCA,
               meta = meta,
               percentVar = percentVar,
@@ -235,6 +242,6 @@ run_pca <- function(feature_by_sample,
 #' @export
 extract_prcomp_scaling <- function(prcomp_object){
   out <- list(center = prcomp_object$center,
-                scale = prcomp_object$scale)
+              scale = prcomp_object$scale)
   return(out)
 }

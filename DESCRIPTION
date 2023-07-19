@@ -1,6 +1,6 @@
 Package: metamoRph
 Title: Metadata projection via data morphing with matrix factorization multiplication
-Version: 0.1.2
+Version: 0.1.3
 Authors@R: 
     person("David", "McGaughey", , "mcgaughey@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9224-2888"))
@@ -13,9 +13,11 @@ Imports:
   BiocParallel,
   matrixStats,
   dplyr,
-  edgeR,
+  Matrix,
   scran,
+  scuttle,
   SingleCellExperiment,
+  sparseMatrixStats,
   tibble,
   tidyr
 Roxygen: list(markdown = TRUE)

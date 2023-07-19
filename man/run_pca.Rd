@@ -39,7 +39,7 @@ with the R::scale function.}
 
 \item{feature_center}{Default is TRUE, which means features (genes) are centered}
 
-\item{sample_cpm_scale}{Default is TRUE; performs cpm scaling on the samples with the edgeR::cpm function.}
+\item{sample_cpm_scale}{Default is TRUE; performs cpm scaling on the samples with the scuttle::scuttle::calculateCPM() function.}
 
 \item{log1p}{Default is TRUE; applies log1p scaling to the input count matrix.}
 
@@ -49,7 +49,7 @@ with the R::scale function.}
 A named list object with the prcomp output returned under the $PCA slot, the given
 metadata under the $meta slot, the percent variance of each PC as the
 $percentVar slot, a list object containing the scaled data's "center" and "scale"
-values for use in the metamoRph function, and the used parameters under the $params slot.
+values for use in the metamoRph function, and the used parameters under the $params slot.\
 }
 \description{
 This function takes in a count matrix (where genes (features) are rows and samples are

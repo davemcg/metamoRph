@@ -13,6 +13,7 @@ vignette: >
 Here we take data from the [EiaD](eyeIntegration.nei.nih.gov) resource, which has been cut down 
 to a few dozen cornea, retina, and RPE samples as well as the first few thousand
 most variable genes (as calculated by variance). 
+
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   message = FALSE,  warning = FALSE,
@@ -51,7 +52,7 @@ meta_project <- data.table::fread(
 
 # projectR
 
-As projectR does not apply the prcomp row (gene) scaling, the new data ends up in the center of the PCA plot. Scaling on the new data alone also results in the variation between the samples being exaggerated.
+As projectR does not apply the prcomp row (gene) scaling, the new data (red circle) ends up in the center of the PCA plot. Scaling on the new data alone also results in the variation between the samples being exaggerated.
 
 ```{r projectR_based_pca, fig.width=8, fig.height=5}
 ref_matrix <- feature_by_sample[,meta_ref %>% pull(sample_accession)]
@@ -76,8 +77,10 @@ data_plot <- bind_rows(cbind(t(pr_proj), meta_project %>%
 data_plot %>%
   mutate(Tissue = case_when(Cohort == 'Body' ~ 'Body', TRUE ~ Tissue)) %>%
   ggplot(aes(x=PC1,y=PC2, color = Tissue)) + geom_point() +
-  ggforce::geom_mark_circle(data = data_plot %>% filter(Data == 'Projection'), color = 'red', expand = unit(2,"mm"), size = 2) +
-  scale_color_manual(values = pals::alphabet(n=12)%>% unname()) + cowplot::theme_cowplot()
+  ggforce::geom_mark_ellipse(data = data_plot %>% filter(Data == 'Projection'), color = 'red', size = 2) +
+  scale_color_manual(values = pals::alphabet(n=12)%>% unname()) +
+  ggforce::geom_mark_ellipse() +
+  cowplot::theme_cowplot()
 
 ```
 

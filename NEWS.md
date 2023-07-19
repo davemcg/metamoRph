@@ -1,3 +1,7 @@
+# metamoRph 0.1.3
+
+  - `run_pca` and `metamoRph` now support sparseMatrices 
+  
 # metamoRph 0.1.2
 
   - add tests with `testthat`
