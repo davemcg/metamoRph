@@ -4,3 +4,14 @@ template:
 
 development:
   mode: auto
+
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - So_many_ways_to_screw_up_PCA_projection
+  - real_data_testing
+  - build_a_brain_region_predictor
+  - morph_scRNA_query_onto_reference
+  - dataset_integration_and_projection
+  
