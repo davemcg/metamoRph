@@ -1,6 +1,6 @@
 Package: metamoRph
 Title: Metadata projection via data morphing with matrix factorization multiplication
-Version: 0.1.3
+Version: 0.2.0
 Authors@R: 
     person("David", "McGaughey", , "mcgaughey@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9224-2888"))
@@ -11,8 +11,8 @@ LazyData: true
 biocViews:
 Imports:
   BiocParallel,
-  matrixStats,
   dplyr,
+  irlba,
   Matrix,
   scran,
   scuttle,
@@ -32,6 +32,9 @@ Suggests:
     projectR,
     knitr,
     rmarkdown,
+    scMerge (>= 1.16.0),
+    Seurat (>= 4.0),
+    tictoc,
     tidymodels,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
