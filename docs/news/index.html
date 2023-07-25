@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">metamoRph</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,8 +25,10 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/So_many_ways_to_screw_up_PCA_projection.html">So many ways to screw up PCA projection</a>
-    <a class="dropdown-item" href="../articles/build_a_brain_region_predictor.html">Build and Apply a Human Brain Region Predictor in 60 seconds or less</a>
     <a class="dropdown-item" href="../articles/real_data_testing.html">Metadata Label Transfer on Real Data</a>
+    <a class="dropdown-item" href="../articles/build_a_brain_region_predictor.html">Build and Apply a Human Brain Region Predictor in 60 seconds or less</a>
+    <a class="dropdown-item" href="../articles/morph_scRNA_query_onto_reference.html">Transfer Labels from a Retina scRNA Reference onto a Query Dataset</a>
+    <a class="dropdown-item" href="../articles/dataset_integration_and_projection.html">Batch Corrected metamoRph Reference</a>
   </div>
 </li>
 <li class="active nav-item">
@@ -46,6 +48,18 @@
       
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="metamorph-020">metamoRph 0.2.0<a class="anchor" aria-label="anchor" href="#metamorph-020"></a></h2>
+<ul><li>two new functions, <code>select_HVG</code> and <code>normalize_data</code> have been pulled out of partially duplicated code in <code>run_pca</code> and <code>metamoRph</code> to ease future normalization additions and to modularize the code-base</li>
+<li>irlba added as a prcomp alternative to speed up large single cell dataset dimensionality reduction</li>
+<li>add a new sample normalization method: Seurat’s “LogNormalize”</li>
+<li>two new scRNA-seq vignettes added</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.3" id="metamorph-013">metamoRph 0.1.3<a class="anchor" aria-label="anchor" href="#metamorph-013"></a></h2>
+<ul><li>
+<code>run_pca</code> and <code>metamoRph</code> now support sparseMatrix</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.2" id="metamorph-012">metamoRph 0.1.2<a class="anchor" aria-label="anchor" href="#metamorph-012"></a></h2>
 <ul><li>add tests with <code>testthat</code>

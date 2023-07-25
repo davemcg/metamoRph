@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="index.html">metamoRph</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,8 +42,10 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="articles/So_many_ways_to_screw_up_PCA_projection.html">So many ways to screw up PCA projection</a>
-    <a class="dropdown-item" href="articles/build_a_brain_region_predictor.html">Build and Apply a Human Brain Region Predictor in 60 seconds or less</a>
     <a class="dropdown-item" href="articles/real_data_testing.html">Metadata Label Transfer on Real Data</a>
+    <a class="dropdown-item" href="articles/build_a_brain_region_predictor.html">Build and Apply a Human Brain Region Predictor in 60 seconds or less</a>
+    <a class="dropdown-item" href="articles/morph_scRNA_query_onto_reference.html">Transfer Labels from a Retina scRNA Reference onto a Query Dataset</a>
+    <a class="dropdown-item" href="articles/dataset_integration_and_projection.html">Batch Corrected metamoRph Reference</a>
   </div>
 </li>
 <li class="nav-item">
@@ -64,8 +66,8 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="metamorph">metamoRph<a class="anchor" aria-label="anchor" href="#metamorph"></a>
 </h1></div>
-<p>A framework for projecting new data onto an reference PCA space. This can be a two step process where the user runs our <code>run_pca</code> function (which wraps <code>prcomp</code> and provides some sensible defaults and enhanced outputs. After <code>run_pca</code> the user can then use <code>metamoRph</code> to project new data onto the existing PCA.</p>
-<p>We also provides two functions, <code>model_build</code> and <code>model_apply</code> to quickly transfer metadata onto new data using the shared PCA space.</p>
+<p>A framework for projecting query (new) data onto an reference PCA space. This is easiest as a two step process where the user runs our <code>run_pca</code> function (which wraps <code>prcomp</code> and provides some sensible defaults and enhanced outputs. After <code>run_pca</code> the user can then use <code>metamoRph</code> to normalize the query (new) data in the same manner as the reference data and then project it onto the existing reference PCA.</p>
+<p>We also provides two functions, <code>model_build</code> and <code>model_apply</code> to very quickly transfer metadata onto new data using the shared PCA space between the reference and the query.</p>
 </div>
 <div class="section level1">
 <h1 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
@@ -127,13 +129,35 @@
 <div class="section level2">
 <h2 id="existing-prcomp-object-projection-example-pseudocode-ish">Existing prcomp object projection example (pseudocode-ish)<a class="anchor" aria-label="anchor" href="#existing-prcomp-object-projection-example-pseudocode-ish"></a>
 </h2>
-<p>It is also possible to use a pre-existing prcomp object with <code>metamoRph</code>, skipping the <code>run_pca</code> step. You will have to ensure that you sample scale your <code>new_data</code> in the same manner that you used for your <code>prcomp</code> run (here we use <code>log2</code> - but replace with whatever scaling your have done. Maybe none?). Note how we have turned off the cpm and log1p scaling in the <code>metamoRph</code> function.</p>
+<p>It is also possible to use a pre-existing prcomp object with <code>metamoRph</code>, skipping the <code>run_pca</code> step. You will have to ensure that you sample scale your <code>new_data</code> in the same manner that you used for your <code>prcomp</code> run (here we use <code>log2</code> - but replace with whatever scaling your have done. Maybe none?). Note how we have turned off the cpm and log1p scaling in the <code>metamoRph</code> function with <code>normaliztion = FALSE</code>.</p>
 <pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davemcg.github.io/metamoRph/">metamoRph</a></span><span class="op">)</span></span>
 <span><span class="va">projected_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/metamoRph.html">metamoRph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">)</span><span class="op">)</span>, </span>
 <span>                               <span class="va">your_prcomp_object</span><span class="op">$</span><span class="va">PCA</span><span class="op">$</span><span class="va">rotation</span>, </span>
 <span>                               center_scale <span class="op">=</span> <span class="fu"><a href="reference/extract_prcomp_scaling.html">extract_prcomp_scaling</a></span><span class="op">(</span><span class="va">your_prcomp_object</span><span class="op">)</span>,</span>
-<span>                               sample_cpm_scale <span class="op">=</span> <span class="cn">FALSE</span>, log1p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre>
+<span>                               normalization <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre>
 </div>
+</div>
+<div class="section level1">
+<h1 id="some-related-tools">Some Related Tools<a class="anchor" aria-label="anchor" href="#some-related-tools"></a>
+</h1>
+<ul>
+<li>(ProjecTILs)[<a href="https://github.com/carmonalab/ProjecTILs" class="external-link uri">https://github.com/carmonalab/ProjecTILs</a>]
+<ul>
+<li>scRNA/Seurat based tool that uses a similar approach to project data (essentialy multiplying the new against the rotation matrix)</li>
+</ul>
+</li>
+<li>(Seurat)[<a href="https://satijalab.org/seurat/articles/integration_mapping.html" class="external-link uri">https://satijalab.org/seurat/articles/integration_mapping.html</a>]
+<ul>
+<li>The big kahuna itself. scRNA analysis playground.</li>
+</ul>
+</li>
+<li>(projectR)[<a href="https://www.bioconductor.org/packages/release/bioc/html/projectR.html" class="external-link uri">https://www.bioconductor.org/packages/release/bioc/html/projectR.html</a>]
+<ul>
+<li>Can transfer data onto PCA <em>and</em> NMF</li>
+<li>At least for PCA does not provide any guardrails for properly scaling the query data</li>
+</ul>
+</li>
+</ul>
 </div>
 
   </main><aside class="col-md-3"><div class="license">

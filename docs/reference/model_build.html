@@ -22,7 +22,7 @@ see vignette("pca_download", package = "metamoRph"))'><!-- mathjax --><script sr
     
     <a class="navbar-brand me-2" href="../index.html">metamoRph</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,8 +37,10 @@ see vignette("pca_download", package = "metamoRph"))'><!-- mathjax --><script sr
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/So_many_ways_to_screw_up_PCA_projection.html">So many ways to screw up PCA projection</a>
-    <a class="dropdown-item" href="../articles/build_a_brain_region_predictor.html">Build and Apply a Human Brain Region Predictor in 60 seconds or less</a>
     <a class="dropdown-item" href="../articles/real_data_testing.html">Metadata Label Transfer on Real Data</a>
+    <a class="dropdown-item" href="../articles/build_a_brain_region_predictor.html">Build and Apply a Human Brain Region Predictor in 60 seconds or less</a>
+    <a class="dropdown-item" href="../articles/morph_scRNA_query_onto_reference.html">Transfer Labels from a Retina scRNA Reference onto a Query Dataset</a>
+    <a class="dropdown-item" href="../articles/dataset_integration_and_projection.html">Batch Corrected metamoRph Reference</a>
   </div>
 </li>
 <li class="nav-item">
@@ -74,7 +76,7 @@ see <code>vignette("pca_download", package = "metamoRph")</code>)</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">model_build</span><span class="op">(</span></span>
 <span>  <span class="va">training_data</span>,</span>
 <span>  <span class="va">training_labels</span>,</span>
-<span>  num_PCs <span class="op">=</span> <span class="fl">200</span>,</span>
+<span>  num_PCs <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  BPPARAM <span class="op">=</span> <span class="fu">BiocParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocParallel/man/SerialParam-class.html" class="external-link">SerialParam</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  model <span class="op">=</span> <span class="st">"lm"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
@@ -94,7 +96,7 @@ for each sample.</p></dd>
 
 <dt>num_PCs</dt>
 <dd><p>number of principal components to use from the training_data.
-Defaults to the first (top) 200.</p></dd>
+Defaults to the first (top) 50.</p></dd>
 
 
 <dt>BPPARAM</dt>

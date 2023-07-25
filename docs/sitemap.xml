@@ -13,10 +13,19 @@
     <loc>https://davemcg.github.io/metamoRph/articles/build_a_brain_region_predictor.html</loc>
   </url>
   <url>
+    <loc>https://davemcg.github.io/metamoRph/articles/dataset_integration_and_projection.html</loc>
+  </url>
+  <url>
     <loc>https://davemcg.github.io/metamoRph/articles/index.html</loc>
   </url>
   <url>
+    <loc>https://davemcg.github.io/metamoRph/articles/morph_scRNA_query_onto_reference.html</loc>
+  </url>
+  <url>
     <loc>https://davemcg.github.io/metamoRph/articles/real_data_testing.html</loc>
+  </url>
+  <url>
+    <loc>https://davemcg.github.io/metamoRph/articles/seurat__integration_mapping.html</loc>
   </url>
   <url>
     <loc>https://davemcg.github.io/metamoRph/authors.html</loc>
@@ -43,6 +52,12 @@
     <loc>https://davemcg.github.io/metamoRph/reference/model_build.html</loc>
   </url>
   <url>
+    <loc>https://davemcg.github.io/metamoRph/reference/normalize_data.html</loc>
+  </url>
+  <url>
     <loc>https://davemcg.github.io/metamoRph/reference/run_pca.html</loc>
+  </url>
+  <url>
+    <loc>https://davemcg.github.io/metamoRph/reference/select_HVG.html</loc>
   </url>
 </urlset>

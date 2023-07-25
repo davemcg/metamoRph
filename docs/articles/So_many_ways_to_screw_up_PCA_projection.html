@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">metamoRph</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,8 +42,10 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/So_many_ways_to_screw_up_PCA_projection.html">So many ways to screw up PCA projection</a>
-    <a class="dropdown-item" href="../articles/build_a_brain_region_predictor.html">Build and Apply a Human Brain Region Predictor in 60 seconds or less</a>
     <a class="dropdown-item" href="../articles/real_data_testing.html">Metadata Label Transfer on Real Data</a>
+    <a class="dropdown-item" href="../articles/build_a_brain_region_predictor.html">Build and Apply a Human Brain Region Predictor in 60 seconds or less</a>
+    <a class="dropdown-item" href="../articles/morph_scRNA_query_onto_reference.html">Transfer Labels from a Retina scRNA Reference onto a Query Dataset</a>
+    <a class="dropdown-item" href="../articles/dataset_integration_and_projection.html">Batch Corrected metamoRph Reference</a>
   </div>
 </li>
 <li class="nav-item">
@@ -68,6 +70,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>So many ways to screw up PCA projection</h1>
             
+            <h4 data-toc-skip class="date">2023-07-25</h4>
       
       
       <div class="d-none name"><code>So_many_ways_to_screw_up_PCA_projection.Rmd</code></div>
@@ -109,11 +112,11 @@ variation into two informative eigenvalues/PCs.</p>
 <span><span class="va">genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'RHO'</span>,<span class="st">'RPE65'</span>,<span class="st">'ABCA4'</span>,<span class="st">'PMEL'</span>, <span class="st">'KRT5'</span><span class="op">)</span></span>
 <span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Retina1'</span>,<span class="st">'Retina2'</span>,<span class="st">'RPE1'</span>,<span class="st">'RPE2'</span>,<span class="st">'Cornea1'</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">faux_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">560</span>,<span class="fl">650</span>,<span class="fl">5</span>,<span class="fl">6</span>,<span class="fl">0</span><span class="op">)</span>, <span class="co"># rho</span></span>
+<span><span class="va">faux_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">560</span>,<span class="fl">650</span>,<span class="fl">5</span>,<span class="fl">6</span>,<span class="fl">9</span><span class="op">)</span>, <span class="co"># rho</span></span>
 <span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">42</span>,<span class="fl">32</span>, <span class="fl">1103</span>,<span class="fl">1201</span>,<span class="fl">2</span><span class="op">)</span>, <span class="co">#rpe65</span></span>
 <span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">810</span>,<span class="fl">903</span>,<span class="fl">202</span>,<span class="fl">205</span>,<span class="fl">45</span><span class="op">)</span>,  <span class="co">#abca4</span></span>
 <span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>,<span class="fl">105</span>,<span class="fl">2004</span>,<span class="fl">1980</span>,<span class="fl">101</span><span class="op">)</span>,<span class="co"># pmel</span></span>
-<span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>,<span class="fl">32</span>,<span class="fl">101</span>,<span class="fl">202</span>,<span class="fl">1567</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="op">)</span><span class="co"># krt5</span></span>
+<span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>,<span class="fl">32</span>,<span class="fl">101</span>,<span class="fl">202</span>,<span class="fl">1867</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="op">)</span><span class="co"># krt5</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">faux_mat</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">genes</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/row.names.html" class="external-link">row.names</a></span><span class="op">(</span><span class="va">faux_mat</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">samples</span></span>
 <span></span>
@@ -136,12 +139,12 @@ slot).</p>
 from about -2 to 2, but now runs from -5 to 3.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="va">faux_mat</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">faux_pca</span><span class="op">$</span><span class="va">rotation</span></span>
-<span><span class="co">#&gt;                PC1       PC2       PC3      PC4        PC5</span></span>
-<span><span class="co">#&gt; Retina1 -5.3069381  6.663913 -6.742996 1.019740  1.7946458</span></span>
-<span><span class="co">#&gt; Retina2 -4.2997533  6.180512 -8.561370 1.023196  1.8633885</span></span>
-<span><span class="co">#&gt; RPE1     0.6846905 10.185969 -7.344765 1.244264 -0.1409538</span></span>
-<span><span class="co">#&gt; RPE2     0.9614531 10.129915 -7.975298 1.080184 -0.1129111</span></span>
-<span><span class="co">#&gt; Cornea1  3.0978105  3.285634 -7.889147 2.953432 -0.1903413</span></span></code></pre></div>
+<span><span class="co">#&gt;               PC1      PC2       PC3         PC4      PC5</span></span>
+<span><span class="co">#&gt; Retina1 -3.665190 6.706788 -7.344774 -0.19334184 3.146782</span></span>
+<span><span class="co">#&gt; Retina2 -2.829324 5.805728 -9.090433 -0.17940189 3.181682</span></span>
+<span><span class="co">#&gt; RPE1     3.019202 8.865143 -8.318996 -0.03906449 1.680128</span></span>
+<span><span class="co">#&gt; RPE2     3.263775 8.661185 -8.930563 -0.21079129 1.690195</span></span>
+<span><span class="co">#&gt; Cornea1  2.472395 1.693552 -9.136326  1.37485738 2.225891</span></span></code></pre></div>
 <p>What happened? If we investigate the <code>prcomp</code>
 documentation we see that the input data, by default, is scaled across
 the features. If we apply the <code>scale</code> function to our log1p
@@ -149,12 +152,12 @@ scaled <code>faux_mat</code> we get a matrix which exactly matches the
 prcomp <code>$x</code> slot.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/scale.html" class="external-link">scale</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="va">faux_mat</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">faux_pca</span><span class="op">$</span><span class="va">rotation</span></span>
-<span><span class="co">#&gt;                PC1        PC2         PC3           PC4           PC5</span></span>
-<span><span class="co">#&gt; Retina1 -2.0431901 -0.3037915  0.39056644 -0.0106105643 -1.731409e-16</span></span>
-<span><span class="co">#&gt; Retina2 -1.5974315 -0.4984942 -0.44451477  0.0106690878  1.540995e-16</span></span>
-<span><span class="co">#&gt; RPE1     0.7816114  1.3692855  0.13985224  0.0318634972  5.206909e-16</span></span>
-<span><span class="co">#&gt; RPE2     0.9130827  1.3399136 -0.14113664 -0.0315408477  4.522474e-16</span></span>
-<span><span class="co">#&gt; Cornea1  1.9459275 -1.9069134  0.05523273 -0.0003811731  3.959764e-16</span></span>
+<span><span class="co">#&gt;               PC1        PC2         PC3           PC4           PC5</span></span>
+<span><span class="co">#&gt; Retina1 -2.057963  0.2320273  0.36944476 -0.0116954785  8.204038e-16</span></span>
+<span><span class="co">#&gt; Retina2 -1.701178 -0.1366033 -0.42140684  0.0118873413  4.905776e-16</span></span>
+<span><span class="co">#&gt; RPE1     1.254511  1.1468746  0.12984655  0.0347133588 -6.470796e-17</span></span>
+<span><span class="co">#&gt; RPE2     1.360317  1.0552042 -0.14052654 -0.0345002389 -4.941149e-17</span></span>
+<span><span class="co">#&gt; Cornea1  1.144313 -2.2975028  0.06264207 -0.0004049826 -4.716018e-17</span></span>
 <span></span>
 <span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/scale.html" class="external-link">scale</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="va">faux_mat</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">faux_pca</span><span class="op">$</span><span class="va">rotation</span><span class="op">)</span> <span class="op">==</span> <span class="va">faux_pca</span><span class="op">$</span><span class="va">x</span></span>
 <span><span class="co">#&gt;          PC1  PC2  PC3  PC4  PC5</span></span>
@@ -174,7 +177,7 @@ new matrix against the original pca <code>$loading</code> slot to put
 the new data in the same PC space.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">6</span>,<span class="fl">3</span><span class="op">)</span>, <span class="co"># rho</span></span>
-<span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">32</span>,<span class="fl">23</span>,<span class="fl">54</span><span class="op">)</span>, <span class="co">#rpe65</span></span>
+<span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">7</span>,<span class="fl">2</span>,<span class="fl">6</span><span class="op">)</span>, <span class="co">#rpe65</span></span>
 <span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">65</span>,<span class="fl">22</span>,<span class="fl">10</span><span class="op">)</span>,  <span class="co">#abca4</span></span>
 <span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">122</span>,<span class="fl">101</span>,<span class="fl">57</span><span class="op">)</span>,<span class="co"># pmel</span></span>
 <span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2567</span>,<span class="fl">1755</span>,<span class="fl">2218</span><span class="op">)</span><span class="op">)</span> <span class="co"># krt5</span></span>
@@ -215,15 +218,15 @@ rotation matrix.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/scale.html" class="external-link">scale</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                RHO      RPE65      ABCA4       PMEL       KRT5</span></span>
-<span><span class="co">#&gt; Cornea2  0.2182179 -0.2717193  1.1295751  0.8642016  0.9500860</span></span>
-<span><span class="co">#&gt; Cornea3  0.8728716 -0.8360593 -0.3573146  0.2311237 -1.0433761</span></span>
-<span><span class="co">#&gt; Cornea4 -1.0910895  1.1077786 -0.7722605 -1.0953253  0.0932901</span></span>
+<span><span class="co">#&gt; Cornea2  0.2182179  0.7559289  1.1295751  0.8642016  0.9500860</span></span>
+<span><span class="co">#&gt; Cornea3  0.8728716 -1.1338934 -0.3573146  0.2311237 -1.0433761</span></span>
+<span><span class="co">#&gt; Cornea4 -1.0910895  0.3779645 -0.7722605 -1.0953253  0.0932901</span></span>
 <span><span class="co">#&gt; attr(,"scaled:center")</span></span>
 <span><span class="co">#&gt;         RHO       RPE65       ABCA4        PMEL        KRT5 </span></span>
-<span><span class="co">#&gt;    4.666667   36.333333   32.333333   93.333333 2180.000000 </span></span>
+<span><span class="co">#&gt;    4.666667    5.000000   32.333333   93.333333 2180.000000 </span></span>
 <span><span class="co">#&gt; attr(,"scaled:scale")</span></span>
 <span><span class="co">#&gt;        RHO      RPE65      ABCA4       PMEL       KRT5 </span></span>
-<span><span class="co">#&gt;   1.527525  15.947832  28.919428  33.171273 407.331560</span></span></code></pre></div>
+<span><span class="co">#&gt;   1.527525   2.645751  28.919428  33.171273 407.331560</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="how-to-fix">How to fix?<a class="anchor" aria-label="anchor" href="#how-to-fix"></a>
@@ -257,10 +260,10 @@ data with the same scale and center values used in in the
 That is because a sequencing machine can create 10,000,000 reads for one
 sample or 100,000,000 reads. Or even more!</p>
 <p>Let’s try <code><a href="https://rdrr.io/r/stats/prcomp.html" class="external-link">stats::prcomp</a></code> again with the same new_data,
-just scaled up 10x.</p>
-<p>Well ugh, look, now the new cornea samples look like the RPE!!!!!</p>
+just scaled up 20x.</p>
+<p>Ugh, now the new cornea samples look more like the RPE.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">with_predict</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">faux_pca</span>, <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">*</span><span class="fl">10</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">with_predict</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">faux_pca</span>, <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">*</span><span class="fl">20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">faux_pca</span><span class="op">$</span><span class="va">x</span>, rownames <span class="op">=</span> <span class="st">'samples'</span><span class="op">)</span>,</span>
 <span>      <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">with_predict</span>, rownames <span class="op">=</span> <span class="st">'samples'</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -367,10 +370,10 @@ the <code>mm_pca</code> space</li>
 </ol>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davemcg.github.io/metamoRph/">metamoRph</a></span><span class="op">)</span></span>
-<span><span class="va">mm_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_pca.html">run_pca</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">faux_mat</span><span class="op">)</span>, meta <span class="op">=</span> <span class="va">samples</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">mm_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_pca.html">run_pca</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">faux_mat</span><span class="op">)</span>, meta <span class="op">=</span> <span class="va">samples</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="op">)</span>, sample_scale <span class="op">=</span> <span class="st">'seurat'</span><span class="op">)</span></span>
 <span><span class="va">projected_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/metamoRph.html">metamoRph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">new_data</span><span class="op">*</span><span class="fl">10</span><span class="op">)</span>, </span>
 <span>                               <span class="va">mm_pca</span><span class="op">$</span><span class="va">PCA</span><span class="op">$</span><span class="va">rotation</span>, </span>
-<span>                               center_scale <span class="op">=</span> <span class="va">mm_pca</span><span class="op">$</span><span class="va">center_scale</span><span class="op">)</span></span>
+<span>                               center_scale <span class="op">=</span> <span class="va">mm_pca</span><span class="op">$</span><span class="va">center_scale</span>, sample_scale <span class="op">=</span> <span class="st">'seurat'</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">faux_pca</span><span class="op">$</span><span class="va">x</span>, rownames <span class="op">=</span> <span class="st">'samples'</span><span class="op">)</span>,</span>
 <span>      <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">projected_pca</span>, rownames <span class="op">=</span> <span class="st">'samples'</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -399,7 +402,7 @@ the <code>mm_pca</code> space</li>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] metamoRph_0.1 ggplot2_3.4.2 dplyr_1.1.2  </span></span>
+<span><span class="co">#&gt; [1] metamoRph_0.2.0 ggplot2_3.4.2   dplyr_1.1.2    </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;  [1] tidyselect_1.2.0            farver_2.1.1               </span></span>
@@ -412,8 +415,8 @@ the <code>mm_pca</code> space</li>
 <span><span class="co">#&gt; [15] rlang_1.1.1                 sass_0.4.6                 </span></span>
 <span><span class="co">#&gt; [17] tools_4.3.0                 igraph_1.4.3               </span></span>
 <span><span class="co">#&gt; [19] utf8_1.2.3                  yaml_2.3.7                 </span></span>
-<span><span class="co">#&gt; [21] knitr_1.43                  S4Arrays_1.0.4             </span></span>
-<span><span class="co">#&gt; [23] labeling_0.4.2              dqrng_0.3.0                </span></span>
+<span><span class="co">#&gt; [21] knitr_1.43                  dqrng_0.3.0                </span></span>
+<span><span class="co">#&gt; [23] S4Arrays_1.0.4              labeling_0.4.2             </span></span>
 <span><span class="co">#&gt; [25] DelayedArray_0.26.6         BiocParallel_1.33.11       </span></span>
 <span><span class="co">#&gt; [27] withr_2.5.0                 purrr_1.0.1                </span></span>
 <span><span class="co">#&gt; [29] BiocGenerics_0.46.0         desc_1.4.2                 </span></span>
@@ -444,8 +447,8 @@ the <code>mm_pca</code> space</li>
 <span><span class="co">#&gt; [79] htmltools_0.5.5             GenomeInfoDbData_1.2.10    </span></span>
 <span><span class="co">#&gt; [81] R6_2.5.1                    textshaping_0.3.6          </span></span>
 <span><span class="co">#&gt; [83] sparseMatrixStats_1.11.1    rprojroot_2.0.3            </span></span>
-<span><span class="co">#&gt; [85] evaluate_0.21               Biobase_2.60.0             </span></span>
-<span><span class="co">#&gt; [87] lattice_0.21-8              highr_0.10                 </span></span>
+<span><span class="co">#&gt; [85] evaluate_0.21               lattice_0.21-8             </span></span>
+<span><span class="co">#&gt; [87] Biobase_2.60.0              highr_0.10                 </span></span>
 <span><span class="co">#&gt; [89] memoise_2.0.1               scran_1.27.1               </span></span>
 <span><span class="co">#&gt; [91] bslib_0.5.0                 Rcpp_1.0.10                </span></span>
 <span><span class="co">#&gt; [93] xfun_0.39                   fs_1.6.2                   </span></span>
