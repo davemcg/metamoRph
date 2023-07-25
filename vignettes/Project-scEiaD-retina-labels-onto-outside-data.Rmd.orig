@@ -1,5 +1,6 @@
 ---
 title: "Project scEiaD retina labels onto outside data"
+date: "`r Sys.Date()`"
 vignette: >
   %\VignetteIndexEntry{Project_scEiaD_retina_labels_onto_outside_data}
   %\VignetteEngine{knitr::rmarkdown}

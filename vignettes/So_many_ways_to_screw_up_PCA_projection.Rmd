@@ -1,6 +1,7 @@
 ---
 title: "So many ways to screw up PCA projection"
 output: rmarkdown::html_vignette
+date: "`r Sys.Date()`"
 vignette: >
   %\VignetteIndexEntry{So many ways to screw up PCA projection}
   %\VignetteEngine{knitr::rmarkdown}
@@ -46,11 +47,11 @@ library(ggplot2)
 genes <- c('RHO','RPE65','ABCA4','PMEL', 'KRT5')
 samples <- c('Retina1','Retina2','RPE1','RPE2','Cornea1')
 
-faux_mat <- cbind(c(560,650,5,6,0), # rho
+faux_mat <- cbind(c(560,650,5,6,9), # rho
                   c(42,32, 1103,1201,2), #rpe65
                   c(810,903,202,205,45),  #abca4
                   c(100,105,2004,1980,101),# pmel
-                  c(3,32,101,202,1567)) |> data.frame()# krt5
+                  c(3,32,101,202,1867)) |> data.frame()# krt5
 colnames(faux_mat) <- genes
 row.names(faux_mat) <- samples
 
@@ -90,7 +91,7 @@ Now we have new data. Three cornea samples. We want to compare these new cornea 
 to see how they compare. As discussed above, we *should* be able to just matrix multiply this new matrix against the original pca `$loading` slot to put the new data in the same PC space.
 ```{r}
 new_data <- cbind(c(5,6,3), # rho
-                  c(32,23,54), #rpe65
+                  c(7,2,6), #rpe65
                   c(65,22,10),  #abca4
                   c(122,101,57),# pmel
                   c(2567,1755,2218)) # krt5
@@ -154,11 +155,11 @@ bind_rows(as_tibble(faux_pca$x, rownames = 'samples'),
 In RNA-seq data it is common to have wildly different sum counts. That is because a sequencing 
 machine can create 10,000,000 reads for one sample or 100,000,000 reads. Or even more! 
 
-Let's try `stats::prcomp` again with the same new_data, just scaled up 10x.
+Let's try `stats::prcomp` again with the same new_data, just scaled up 20x.
 
-Well ugh, look, now the new cornea samples look like the RPE!!!!!
+Ugh, now the new cornea samples look more like the RPE.
 ```{r, fig.width=4, fig.height=3}
-with_predict <- predict(faux_pca, (log1p(new_data*10)))
+with_predict <- predict(faux_pca, (log1p(new_data*20)))
 
 bind_rows(as_tibble(faux_pca$x, rownames = 'samples'),
       as_tibble(with_predict, rownames = 'samples')) |>
@@ -227,10 +228,10 @@ There two only two steps:
 
 ```{r, fig.width=4, fig.height=3}
 library(metamoRph)
-mm_pca <- run_pca(t(faux_mat), meta = samples |> data.frame())
+mm_pca <- run_pca(t(faux_mat), meta = samples |> data.frame(), sample_scale = 'seurat')
 projected_pca <- metamoRph(t(new_data*10), 
                                mm_pca$PCA$rotation, 
-                               center_scale = mm_pca$center_scale)
+                               center_scale = mm_pca$center_scale, sample_scale = 'seurat')
 
 bind_rows(as_tibble(faux_pca$x, rownames = 'samples'),
       as_tibble(projected_pca, rownames = 'samples')) |>

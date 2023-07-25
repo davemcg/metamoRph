@@ -1,6 +1,7 @@
 ---
 title: "Build and Apply a Human Brain Region Predictor in 60 seconds or less"
 output: rmarkdown::html_vignette
+date: "`r Sys.Date()`"
 vignette: >
   %\VignetteIndexEntry{Build and Apply a Human Brain Region Predictor in 60 seconds or less}
   %\VignetteEngine{knitr::rmarkdown}
@@ -31,7 +32,7 @@ We show the `gtex.smtsd` to see the brain regions assayed in GTEx.
 library(ggplot2)
 library(dplyr)
 library(recount3)
-library(metamoRph)
+#library(metamoRph)
 human_projects <- available_projects()
 
 project_info <- subset(human_projects, file_source == "gtex" & project_type == "data_sources" & project == 'BRAIN')
@@ -43,7 +44,6 @@ colData(rse_gene_brain)$gtex.smtsd %>% table()
 # Extract read counts
 
 ```{r}
-
 brain_counts <- compute_read_counts(rse_gene_brain)
 ```
 
@@ -51,6 +51,9 @@ brain_counts <- compute_read_counts(rse_gene_brain)
 The `train` data is used to build the PCA object. That PCA data is used in the model building. The `project` data is then morphed/projected onto the PCA space with `metamoRph` and the output from that is used by `model_apply` to guess the tissue label.
 
 This all happens in less than 10 seconds on my MacBook.
+
+I find (anecdotally) that using a fairly large number of PC (200 in this case) tends
+to have modestly label transfer performance with bulk RNA seq data.
 ```{r}
 set.seed(20230711)
 train_meta <- colData(rse_gene_brain) %>% as_tibble(rownames = 'id') %>% group_by(gtex.smtsd) %>% sample_n(40)
@@ -63,7 +66,8 @@ gtex_pca <-  run_pca(train_counts, train_meta)
 
 trained_model <- model_build(gtex_pca$PCA$x,
                              gtex_pca$meta %>% pull(gtex.smtsd),
-                             model = 'lm', verbose = FALSE)
+                             num_PCs = 200, 
+                             verbose = FALSE)
 
 projected_data <- metamoRph(project_counts,
                             gtex_pca$PCA$rotation,
@@ -96,7 +100,7 @@ bind_rows(projected_data %>% as_tibble(rownames = 'id')) %>%
 ```
 
 # Now a harder thing - using **outside** data on the model we built
-BA9 prefontal cortex - and the model built still has ~90% accuracy.
+BA9 prefontal cortex - and the model built still has ~89% accuracy.
 ```{r}
 # outside brain prefrontal cortex (BA9)
 outside_gtex <- subset(human_projects,  project_type == "data_sources" & project == 'SRP058181')

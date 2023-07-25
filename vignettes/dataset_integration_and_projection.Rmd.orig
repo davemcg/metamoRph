@@ -1,0 +1,394 @@
+---
+title: "Batch Corrected metamoRph Reference"
+output: html_document
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Batch Corrected metamoRph Reference}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  tidy = TRUE,
+  tidy.opts = list(width.cutoff = 95),
+  warning = FALSE,
+  error = FALSE,
+  message = FALSE,
+  fig.width = 10
+)
+```
+
+# Motivation
+
+You want to build a *batch corrected* scRNA-seq reference from several disparate datasets
+to use as a resource for label transfer and visualization onto *new* data. 
+
+# So...
+
+metamoRph **is not** a batch correction tool. Just a small set of functions to enable 
+projection of data onto an existing reference resource. 
+
+Using a disparate set of scRNA datasets with `metamoRph::run_pca` requires those datasets to be batch corrected.
+
+Here we present two approaches: one using Seurat's `IntegrateData` and another with scMerge2 to generate corrected counts. 
+
+To demonstrate that the applicability of metamoRph can extend beyond data I am cherry picking from the variety of ocular resources I have curated, we will use the data from Seurat's [Mapping and annotating query datasets](https://satijalab.org/seurat/articles/integration_mapping.html) guide. 
+
+# Why not just use Seurat the whole way through?????
+
+Seurat has a very full set of tools to do just about everything - including the batch correction, projecting new data onto it, and then transfer the labels and make a matching UMAP. The code that does that is reproduced in the first code chunk. 
+
+Why even bother using metamoRph? There are two reasons. First, is that metamoRph is a *general* projection engine. You can use it for bulk RNA. You can use it for scRNA. There is no reason why you can't use it for other kinds of information! PCA (or SVD) are tremendous dimensionality reduction approaches and I find it amazing that, with a touch of attention about data preprocessing, you can project (morph!) new data onto an existing PCA space with just a matrix multiplication. The second is speed. Because our approach is so simple, once you have built a reference, you can morph new data *and* do the label transfer in second(s).
+
+# Why can't I use the PCA I already made with Seurat?
+
+Unfortunately you can't use the Seurat PCA because they do not return the center and scaling values used in their internal data normalization. The bog standard `prcomp` function *does* return these values, so if the PCA you are using is from `prcomp` (or inspired by `prcomp`) then those values can be extracted from the returned object with `metamoRph::extract_prcomp_scaling()`. 
+
+# Package Loads
+```{r Seurat}
+library(Seurat)
+library(SeuratData)
+library(dplyr)
+library(uwot)
+library(ggplot2)
+library(cowplot)
+library(patchwork)
+library(metamoRph)
+library(scMerge)
+#InstallData("panc8")
+```
+
+# Seurat Dataset Integration
+
+This code is taken from the Seurat v4 [Mapping and annotating query datasets](https://satijalab.org/seurat/articles/integration_mapping.html) guide. The git link to the guide is [here](https://github.com/satijalab/seurat/blob/78c2c94dbd9fdb7e3facbacee7f34900d8f20ff1/vignettes/integration_mapping.Rmd), should the previous link go dead or the guide is substantially changed in the future. 
+
+## Integrate
+```{r Seurat Integrate Data, echo = TRUE,results=FALSE}
+
+data("panc8")
+
+pancreas.list <- SplitObject(panc8, split.by = "tech")
+pancreas.list <- pancreas.list[c("celseq", "celseq2", "fluidigmc1", "smartseq2")]
+
+tictoc::tic()
+for (i in 1:length(pancreas.list)) {
+  pancreas.list[[i]] <- NormalizeData(pancreas.list[[i]], verbose = FALSE)
+  pancreas.list[[i]] <- FindVariableFeatures(pancreas.list[[i]], selection.method = "vst", nfeatures = 2000,
+                                             verbose = FALSE)
+}
+
+
+reference.list <- pancreas.list[c("celseq", "celseq2", "smartseq2")]
+pancreas.anchors <- FindIntegrationAnchors(object.list = reference.list, dims = 1:30)
+
+pancreas.integrated <- IntegrateData(anchorset = pancreas.anchors, dims = 1:30)
+seurat_integration_timing <- tictoc::toc()
+```
+
+## Map New Data Onto Reference
+
+Seurat's approach results in 617 correct labels and 21 incorrect. Given the UMAP viz (cue Lior Pachter screaming) probably a few of those "incorrect" are mislabels.
+
+```{r seurat example umaps}
+tictoc::tic()
+# switch to integrated assay. The variable features of this assay are automatically set during
+# IntegrateData
+DefaultAssay(pancreas.integrated) <- "integrated"
+# Run the standard workflow for visualization and clustering
+pancreas.integrated <- ScaleData(pancreas.integrated, verbose = FALSE)
+pancreas.integrated <- RunPCA(pancreas.integrated, npcs = 30, verbose = FALSE)
+pancreas.integrated <- RunUMAP(pancreas.integrated, reduction = "pca", dims = 1:30, verbose = FALSE)
+seurat_rebuild_analysis_on_corrected_data_timing <- tictoc::toc()
+# p1 <- DimPlot(pancreas.integrated, reduction = "umap", group.by = "tech")
+# p2 <- DimPlot(pancreas.integrated, reduction = "umap", group.by = "celltype", label = TRUE, repel = TRUE) +
+#   NoLegend()
+# p1 + p2
+
+tictoc::tic()
+
+# project new data onto reference and build matching umap
+pancreas.query <- pancreas.list[["fluidigmc1"]]
+pancreas.anchors <- FindTransferAnchors(reference = pancreas.integrated, query = pancreas.query,
+                                        dims = 1:30, reference.reduction = "pca")
+predictions <- TransferData(anchorset = pancreas.anchors, refdata = pancreas.integrated$celltype,
+                            dims = 1:30)
+pancreas.query <- AddMetaData(pancreas.query, metadata = predictions)
+
+pancreas.integrated <- RunUMAP(pancreas.integrated, dims = 1:30, reduction = "pca", return.model = TRUE)
+pancreas.query <- MapQuery(anchorset = pancreas.anchors, 
+                           reference = pancreas.integrated, 
+                           query = pancreas.query,
+                           refdata = list(celltype = "celltype"), 
+                           reference.reduction = "pca", 
+                           reduction.model = "umap")
+
+pancreas.query$prediction.match <- pancreas.query$predicted.id == pancreas.query$celltype
+table(pancreas.query$prediction.match)
+seurat_default_accuracy <- sum(pancreas.query$prediction.match) / length(pancreas.query$prediction.match)
+
+# end timing BEFOFE the plotting step so we don't also compare plotting efficiency
+seurat_projection_timing <- tictoc::toc()
+
+p1 <- DimPlot(pancreas.integrated, reduction = "umap", group.by = "celltype", label = TRUE, label.size = 3,
+              repel = TRUE) + NoLegend() + ggtitle("Reference annotations")
+p2 <- DimPlot(pancreas.query, reduction = "ref.umap", group.by = "predicted.celltype", label = TRUE,
+              label.size = 3, repel = TRUE) + NoLegend() + ggtitle("Query transferred labels")
+
+
+p1 + p2
+
+
+```
+
+# Leverage Seurat's Corrected Counts in metamoRph
+
+The first approach we demonstrate is to directly use Seurat's corrected counts from the code chunk above in building a "metamoRph" reference and then projecting/morphing the new data onto it. Read the commented lines in the code block to see explanations of why certain parameters were used in metamoRph.
+
+```{r seurat_metamoRph_collab, fig.width=10, fig.height=4}
+tictoc::tic()
+
+# here we pull the corrected counts from the `integrated` slot
+# and use it as the reference data
+# NOTE 1: see how we have TURNED OFF NORMALIZATION as the data already is normalized
+# NOTE 2: we have changed ntop from the default of 1000 to 2000 to match what Seurat uses 
+# in their example
+reference_obj <- metamoRph::run_pca(pancreas.integrated@assays$integrated@data, 
+                                    meta = pancreas.integrated@meta.data, 
+                                    method = 'irlba', 
+                                    normalization = FALSE,
+                                    irlba_n = 30,
+                                    ntop = 2000)
+# Seurat and scran both use cosine instead of euclidean as the metric
+# see also how we have the full umap model returned
+# this is required downstream 
+ref_umap <- uwot::umap(reference_obj$PCA$x[,1:30],
+                       metric = 'cosine',
+                       ret_model = TRUE )
+metamoRph_build_ref_from_seurat_counts <- tictoc::toc()
+
+# plotting code
+# first we are going to stick some of the first lines into a little function
+# to reduce copy/pasting for the later plots
+
+quick_plotter <- function(umap_data, matching_metadata, point_color = 'celltype'){
+  matching_metadata$group <- matching_metadata[,point_color]
+  umap_data %>% 
+    as_tibble(rownames = 'bc') %>% 
+    left_join(matching_metadata %>% as_tibble(rownames = 'bc')) %>% 
+    ggplot(aes(x=V1,y=V2,color=group)) + 
+    geom_point(size = 1) + 
+    ggrepel::geom_text_repel(data = . %>% 
+                               group_by(group) %>% 
+                               summarise(V1 = mean(V1),
+                                         V2 = mean(V2)),
+                             aes(label = group, color = group),
+                             alpha = 0.9, bg.color = 'white') +
+    cowplot::theme_cowplot() + xlab('') + ylab('') +
+    scale_color_manual(values = pals::glasbey() %>% unname()) +
+    theme(legend.position = 'none')
+} 
+a <- quick_plotter(ref_umap$embedding, pancreas.integrated@meta.data, 'celltype') +
+  ggtitle("Reference: celseq, celseq2, smartseq2")
+tictoc::tic()
+
+# here is where we take the new/query data `pancreas.query` and yank out
+# the raw counts
+# we specify that metamoRph should transform the counts data 
+# using the "Seurat" approach instead of the default "cpm" approach
+query_morphed <-  metamoRph::metamoRph(pancreas.query@assays$RNA@counts, 
+                                       reference_obj$PCA$rotation[,1:30], 
+                                       center_scale = reference_obj$center_scale, 
+                                       sample_scale = 'seurat')
+# now we use the reference data PCA ($PCA$x slot) 
+# in our model builder to build a cell type label guesser 
+# from the known labels "reference_obj$meta$celltype"
+ml <- metamoRph::model_build(reference_obj$PCA$x[,1:30],
+                             reference_obj$meta$celltype)
+# now we use the models we built to apply to the new data's metamoRph 
+# projected PCA space
+ma <- metamoRph::model_apply(ml, query_morphed, pancreas.query@meta.data$celltype)
+
+seurat_metamorph_accuracy <- ma %>% filter(sample_label == predict) %>% nrow() / ma %>% filter(!is.na(sample_label)) %>% nrow()
+paste("Accuracy:", seurat_metamorph_accuracy)
+
+paste("# Correct:", ma %>% filter(sample_label == predict) %>% nrow())
+paste("# Wrong:", ma %>% filter(sample_label != predict) %>% nrow())
+
+
+umap_proj <- umap_transform(query_morphed[,1:30], ref_umap)
+
+seurat_metamorph_project_timing <- tictoc::toc()
+
+b <- quick_plotter(umap_proj, pancreas.query@meta.data, 'celltype') +
+  ggtitle("Query: fluidigmc1")
+
+
+cowplot::plot_grid(a,b)
+```
+
+
+# scMerge2 Batch Correction as Input to metamoRph
+
+This is a different approach then before. Here Seurat is not used at all. Instead 
+we give the raw counts to `metamoRph::normalize_data` which is used internally by
+`metamoRph::run_pca` to library and log1p normalize the counts as required by [scMerge2](https://www.nature.com/articles/s41467-023-39923-2). We find the top 2000 HVG and 
+feed this matrix into scMerge2 to generate batch correct counts. We use this batch corrected counts to build our metamoRph PCA reference, then project/morph the new data on it. We use the projected/morphed PCA space to make a new UMAP and move labels over, as we have done earlier. 
+
+```{r scMerge2, fig.width=10, fig.height=4}
+# metaMorph 
+tictoc::tic()
+# cpm and log1p norm the data
+dat <- metamoRph::normalize_data(
+  cbind(pancreas.list[[1]]@assays$RNA@counts,
+        pancreas.list[[2]]@assays$RNA@counts,
+        pancreas.list[[3]]@assays$RNA@counts)
+)
+
+meta <- rbind(pancreas.list[[1]]@meta.data,
+              pancreas.list[[2]]@meta.data,
+              pancreas.list[[3]]@meta.data)
+# identify the top 2000 HVG 
+hvg_genes <- metamoRph::select_HVG(dat, ntop = 2000)
+# make corrected expression matrix
+# Note: we turn off the unneeded cosineNorm
+scmerge_correction <- scMerge2(dat[hvg_genes,], 
+                               batch = meta$tech,
+                               cosineNorm = FALSE, 
+                               cellTypes = meta$celltype,
+                               verbose = FALSE,
+                               seed = '2023.0723')
+# pull corrected matrix out of the scmerge2 object
+corrected_dat <- scmerge_correction$newY
+# again we turn off normalization as the scmerge corrected
+# data has already been cpm and log1p normalized
+scmerge2_batch_cor_timing <- tictoc::toc()
+
+tictoc::tic()
+reference_obj <- metamoRph::run_pca(corrected_dat, 
+                                    meta = meta, 
+                                    method = 'irlba', 
+                                    irlba_n = 30,
+                                    normalization = FALSE,
+                                    ntop = 2000)
+
+
+
+# run umap
+ref_umap_scMerge2 <- uwot::umap(reference_obj$PCA$x[,1:30],
+                                metric = 'cosine',
+                                ret_model = TRUE )
+metamoRph_ref_with_scmerge2_correct_counts <- tictoc::toc()
+a <- quick_plotter(ref_umap_scMerge2$embedding, pancreas.integrated@meta.data, 'celltype') +
+  ggtitle("Reference: celseq, celseq2, smartseq2") 
+# create projected PCA space with the new data via
+# metamoRph's matrix multplication 
+
+tictoc::tic()
+query_morphed <-  metamoRph::metamoRph(pancreas.query@assays$RNA@counts, 
+                                       reference_obj$PCA$rotation[,1:30], 
+                                       center_scale = reference_obj$center_scale)
+
+
+
+
+# build cell type label model
+ml <- metamoRph::model_build(data.frame(reference_obj$PCA$x[,1:30]),
+                             meta$celltype)
+# apply the model
+ma <- metamoRph::model_apply(ml, query_morphed, pancreas.query@meta.data$celltype)
+
+scmerge2_metamorph_accuracy <- ma %>% filter(sample_label == predict) %>% nrow() / ma %>% filter(!is.na(sample_label)) %>% nrow()
+paste("Accuracy:", scmerge2_metamorph_accuracy)
+paste("# Correct:", ma %>% filter(sample_label == predict) %>% nrow())
+paste("# Wrong:", ma %>% filter(sample_label != predict) %>% nrow())
+
+# project the morphed PCA space of the new data onto the existing
+# PCA we built above
+umap_proj <- umap_transform(query_morphed[,1:30], ref_umap)
+
+b <- quick_plotter(umap_proj, pancreas.query@meta.data, 'celltype') +
+  ggtitle("Query: fluidigmc1")
+
+
+cowplot::plot_grid(a,b)
+metamorph_scmerge2_morph_timing <- tictoc::toc()
+```
+
+# Timings
+
+Full Seurat is the slowest approach. 
+
+metamoRph IS NOT A BATCH CORRECTION tool and thus there is nothing to record in the "Batch Correction" category for metamoRph.
+
+Building the reference data in Seurat is about 2x faster than metamoRph. I plan on trying to figure out *why* that is the case. In theory I would expect them to be approximately the same.
+
+Projecting the new data onto the reference is about 20x faster in metamoRph compared to Seurat.
+
+```{r batch correction timings, fig.width=14, fig.height=3}
+batch_correction_timing <- c(
+  substr(seurat_integration_timing$callback_msg, 1,4) %>% as.numeric(),
+  substr(scmerge2_batch_cor_timing$callback_msg, 1,4) %>% as.numeric()
+)
+names(batch_correction_timing) <- c("Seurat","scMerge2")
+
+build_reference <- c(
+  substr(seurat_rebuild_analysis_on_corrected_data_timing$callback_msg, 1,4) %>% as.numeric(),
+  substr(metamoRph_build_ref_from_seurat_counts$callback_msg,1,4) %>%  as.numeric(),
+  substr(metamoRph_ref_with_scmerge2_correct_counts$callback_msg,1,4) %>%  as.numeric()
+)
+
+names(build_reference) <- c("Seurat","metamoRph (Seurat origin)","metamoRph (scMerge2 origin)")
+
+projection_timing <- c(
+  substr(seurat_projection_timing$callback_msg,1,4) %>%  as.numeric(),
+  substr(seurat_metamorph_project_timing$callback_msg,1,4) %>%  as.numeric(),
+  substr(metamorph_scmerge2_morph_timing$callback_msg,1,4) %>% as.numeric()
+)
+names(projection_timing) <- c("Seurat","metamoRph (Seurat origin)","metamoRph (scMerge2 origin)")
+
+
+bind_rows(data.frame(batch_correction_timing) %>% 
+            as_tibble(rownames = 'Method') %>% mutate(Step = 'Batch Correction') %>% 
+            dplyr::rename(time = batch_correction_timing),
+          data.frame(build_reference) %>% 
+            as_tibble(rownames = 'Method') %>% mutate(Step = 'Build Reference') %>% 
+            dplyr::rename(time = build_reference),
+          data.frame(projection_timing) %>% 
+            as_tibble(rownames = 'Method') %>% mutate(Step = 'Query Projection') %>% 
+            dplyr::rename(time = projection_timing)) %>% 
+  mutate(Method = factor(Method, levels = c("Seurat","metamoRph*","scMerge2","metamoRph (Seurat origin)","metamoRph (scMerge2 origin)") %>% rev())) %>% 
+  ggplot(aes(y=Method,x=time)) + 
+  geom_bar(stat='identity') + 
+  facet_wrap(~Step, scales = 'free_y') +
+  xlab("Time (seconds)") +
+  geom_text(aes(label = time), hjust= 'inward', color = 'orange', size = 6) +
+  cowplot::theme_cowplot() 
+
+```
+
+
+# Accuracy of Label Transfer
+
+All three approaches have highly similar accuracy. I guess if you are getting really nit picky the Seurat counts used in metamoRph are a touch worse than full Seurat and the scMerge2/Seurat approach is a bit better. But all work pretty well in my opinion.
+```{r batch correction accuracy, fig.width=6, fig.height=5}
+accuracy <- c(seurat_default_accuracy,
+  seurat_metamorph_accuracy,
+  scmerge2_metamorph_accuracy
+  ) %>% data.frame() 
+accuracy$method <- c("Seurat","metamoRph (Seurat origin)", "metamoRph (scMerge2 origin)")
+colnames(accuracy) <- c('Accuracy','Method')
+accuracy %>% 
+  mutate(Accuracy = Accuracy * 100) %>% 
+  ggplot(aes(y=Method,x=Accuracy)) +
+  geom_bar(stat='identity') +
+  geom_text(aes(label = round(Accuracy,2)), hjust= 'inward', color = 'orange', size = 6) +
+  cowplot::theme_cowplot() +
+  ylab("Method") + xlab("% Correct Transferred Cell Type Labels") + coord_cartesian(xlim = c(0,100))
+```
+
+# Session Info
+```{r}
+sessionInfo()
+```
+
