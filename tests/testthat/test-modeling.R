@@ -26,13 +26,13 @@ test_that("predict tissues", {
   
   
   pca_result <- run_pca(t(faux_mat), meta = samples |> data.frame(),
-                        sample_cpm_scale = TRUE,
+                        sample_scale = 'cpm',
                         log1p = TRUE)
   
   morph_result <- metamoRph(t(new_data) * 100, 
                             pca_result$PCA$rotation, 
                             center_scale = pca_result$center_scale,
-                            sample_cpm_scale = TRUE,
+                            sample_scale = 'cpm',
                             log1p = TRUE)
   
   trained_model <- model_build(pca_result$PCA$x,

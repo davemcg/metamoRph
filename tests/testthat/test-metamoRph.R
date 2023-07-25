@@ -22,19 +22,17 @@ row.names(new_data) <- c("Cornea2","Cornea3","Cornea4")
 
 
 test_that("cpm scaling only, metamoRph projects new cornea approx the same as original cornea", {
-  # Define input data for the test
-  new_counts <- faux_mat
   # Call the function
   pca_result <- run_pca(t(faux_mat), meta = samples |> data.frame(),
-                    sample_cpm_scale = TRUE,
-                    log1p = FALSE,
+                    sample_scale = 'cpm',
+                    log1p = FALSE, 
                     feature_scale = FALSE,
                     feature_center = FALSE)
   
   morph_result <- metamoRph(t(new_data) * 100, 
                             pca_result$PCA$rotation, 
                             center_scale = pca_result$center_scale,
-                            sample_cpm_scale = TRUE,
+                            sample_scale = 'cpm',
                             log1p = FALSE)
                             
   expect_equal(pca_result$PCA$x[5,1],  morph_result[1,1])
@@ -46,7 +44,7 @@ test_that("cpm and log1p scaling only, metamoRph projects new cornea approx the 
   new_counts <- faux_mat
   # Call the function
   pca_result <- run_pca(t(faux_mat) , meta = samples |> data.frame(),
-                        sample_cpm_scale = TRUE,
+                        sample_scale = 'cpm',
                         log1p = TRUE,
                         feature_scale = FALSE,
                         feature_center = FALSE)
@@ -54,7 +52,7 @@ test_that("cpm and log1p scaling only, metamoRph projects new cornea approx the 
   morph_result <- metamoRph(t(new_data) * 100, 
                             pca_result$PCA$rotation, 
                             center_scale = pca_result$center_scale,
-                            sample_cpm_scale = TRUE,
+                            sample_scale = 'cpm',
                             log1p = TRUE)
   
   # Make assertions to check if the output is as expected
@@ -62,11 +60,10 @@ test_that("cpm and log1p scaling only, metamoRph projects new cornea approx the 
 })
 
 test_that("log1p scaling only, metamoRph projects new cornea as original cornea", {
-  # Define input data for the test
-  new_counts <- faux_mat
+
   # Call the function
   pca_result <- run_pca(t(faux_mat), meta = samples |> data.frame(),
-                        sample_cpm_scale = FALSE,
+                        sample_scale = 'none',
                         log1p = TRUE,
                         feature_scale = FALSE,
                         feature_center = FALSE)
@@ -74,7 +71,7 @@ test_that("log1p scaling only, metamoRph projects new cornea as original cornea"
   morph_result <- metamoRph(t(new_data), 
                             pca_result$PCA$rotation, 
                             center_scale = pca_result$center_scale,
-                            sample_cpm_scale = FALSE,
+                            sample_scale = 'none',
                             log1p = TRUE)
   
   # Make assertions to check if the output is as expected
@@ -82,11 +79,10 @@ test_that("log1p scaling only, metamoRph projects new cornea as original cornea"
 })
 
 test_that("cpm,log1p, and center-scale with features metamoRph projects new cornea approx the same as original cornea", {
-  # Define input data for the test
-  new_counts <- faux_mat
+
   # Call the function
   pca_result <- run_pca(t(faux_mat), meta = samples |> data.frame(),
-                        sample_cpm_scale = TRUE,
+                        sample_scale = 'cpm',
                         log1p = TRUE,
                         feature_scale = TRUE,
                         feature_center = TRUE)
@@ -94,7 +90,7 @@ test_that("cpm,log1p, and center-scale with features metamoRph projects new corn
   morph_result <- metamoRph(t(new_data) * 100, 
                             pca_result$PCA$rotation, 
                             center_scale = pca_result$center_scale,
-                            sample_cpm_scale = TRUE,
+                            sample_scale = 'cpm',
                             log1p = TRUE)
   
   # Make assertions to check if the output is as expected
