@@ -12,7 +12,7 @@
 #' @param training_labels vector which has the row-matched labels (e.g. cell types)
 #' for each sample.
 #' @param num_PCs number of principal components to use from the training_data.
-#' Defaults to the first (top) 200.
+#' Defaults to the first (top) 50.
 #' @param BPPARAM The BiocParallel class
 #' @param model Default is lm. We also support xgboost, glm, rf, and svm.
 #' In our experience we find lm and svm to be the best performers.
@@ -23,7 +23,7 @@
 #' @export
 model_build <- function(training_data,
                         training_labels,
-                        num_PCs = 200,
+                        num_PCs = 50,
                         BPPARAM = BiocParallel::SerialParam(),
                         model = 'lm',
                         verbose = TRUE){
