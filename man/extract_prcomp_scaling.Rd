@@ -15,5 +15,8 @@ values for use in the metamoRph function
 }
 \description{
 This function takes in a prcomp object and returns the center and scale
-vectors a list for direct use in metamoRph::metamoRph.
+vectors a list that can be used in metamoRph::metamoRph.
+}
+\details{
+This function is used by metamoRph::run_pca
 }

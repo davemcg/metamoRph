@@ -7,7 +7,7 @@
 model_build(
   training_data,
   training_labels,
-  num_PCs = 200,
+  num_PCs = 50,
   BPPARAM = BiocParallel::SerialParam(),
   model = "lm",
   verbose = TRUE
@@ -20,7 +20,7 @@ model_build(
 for each sample.}
 
 \item{num_PCs}{number of principal components to use from the training_data.
-Defaults to the first (top) 200.}
+Defaults to the first (top) 50.}
 
 \item{BPPARAM}{The BiocParallel class}
 

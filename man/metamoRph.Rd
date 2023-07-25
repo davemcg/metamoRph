@@ -8,7 +8,9 @@ metamoRph(
   new_counts,
   rotation,
   center_scale = NULL,
-  sample_cpm_scale = TRUE,
+  normalization = TRUE,
+  sample_scale = "cpm",
+  feature_scale = FALSE,
   log1p = TRUE
 )
 }
@@ -24,11 +26,18 @@ in the output$PCA$rotation slot.}
 and the $scale slot has the scale value for the "scale" function. If you do not
 give a value here, then feature/gene scaling WILL NOT HAPPEN.}
 
-\item{sample_cpm_scale}{Default is TRUE; This should match the value given
-to metamoRph::run_pca(). If you are using your own rotations and don't know whether you have
-done cpm scaling then...you probably should set this to FALSE.}
+\item{normalization}{Default is TRUE, if set to FALSE will override \code{sample_scale} and \code{log1p}
+and not do any sample scaling}
 
-\item{log1p}{Default is TRUE; log1p scales the input count matrix}
+\item{sample_scale}{Options include \code{cpm}, \code{seurat}, \code{zscale},  and \code{none}. This MUST match
+the normalization used in the data for \code{run_pca} (or where your rotation came from).}
+
+\item{feature_scale}{Default is FALSE, if TRUE will apply feature (gene) scaling to the input (query)
+data (if center_scale is left empty). VERY DANGEROUS as this will likely put the query data in a different scale than your
+reference data. Use with deliberate intent.}
+
+\item{log1p}{Default is TRUE. Again, must match the normalization used in the data for
+\code{run_pca} (or where your rotation came from).}
 }
 \value{
 A matrix with the transformated eigenvalue matrix which should be equivalent
@@ -36,7 +45,7 @@ to the original rotation matrix's eigenvalue/pattern matrix (The $x slot from
 the output of prcomp)
 }
 \description{
-This function takes in a count matrix (where genes (features) are rows and samples are
+Takes in a count matrix (where genes (features) are rows and samples are
 columns) as well as a named vector with the eigenvalues (see \code{\link[=run_pca]{run_pca()}})
 and pulls the gene (feature) information from the rotation vector and cuts down
 the new_counts matrix to match the rotation vector gene (feature) names. Any

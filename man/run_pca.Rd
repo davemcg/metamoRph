@@ -7,14 +7,17 @@
 run_pca(
   feature_by_sample,
   meta,
+  method = "prcomp",
   ntop = 1000,
   hvg_selection = "scran",
   hvg_force = NULL,
   feature_scale = TRUE,
   feature_center = TRUE,
-  sample_cpm_scale = TRUE,
+  normalization = TRUE,
+  sample_scale = "cpm",
   log1p = TRUE,
-  remove_regex = "^MT|^RPS|^RPL"
+  remove_regex = "^MT|^RPS|^RPL",
+  irlba_n = 50
 )
 }
 \arguments{
@@ -23,6 +26,8 @@ columns).}
 
 \item{meta}{Metadata for the samples. The rows must match the columns
 for \code{feature_by_sample}.}
+
+\item{method}{Defaults to prcomp, use irlba for large matrices for speed improvement}
 
 \item{ntop}{Number of highly variable genes/features to use in the prcomp PCA. Defaults to 1000.}
 
@@ -39,11 +44,16 @@ with the R::scale function.}
 
 \item{feature_center}{Default is TRUE, which means features (genes) are centered}
 
-\item{sample_cpm_scale}{Default is TRUE; performs cpm scaling on the samples with the scuttle::scuttle::calculateCPM() function.}
+\item{normalization}{Default is TRUE, if set to FALSE will override \code{sample_scale} and \code{log1p}
+and not do any sample scaling}
+
+\item{sample_scale}{Default is cpm; performs cpm scaling on the samples with the scuttle::calculateCPM() function.}
 
 \item{log1p}{Default is TRUE; applies log1p scaling to the input count matrix.}
 
 \item{remove_regex}{Default regex pattern is '^MT|^RPS|^RPL'. Set to '' to skip.}
+
+\item{irlba_n}{Default 50. Only used for irlba - will return this many principal components.}
 }
 \value{
 A named list object with the prcomp output returned under the $PCA slot, the given
