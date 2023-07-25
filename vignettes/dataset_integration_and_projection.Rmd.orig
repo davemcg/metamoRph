@@ -153,7 +153,7 @@ tictoc::tic()
 # NOTE 1: see how we have TURNED OFF NORMALIZATION as the data already is normalized
 # NOTE 2: we have changed ntop from the default of 1000 to 2000 to match what Seurat uses 
 # in their example
-reference_obj <- metamoRph::run_pca(pancreas.integrated@assays$integrated@data, 
+reference_obj <- metamoRph::run_pca(as.matrix(pancreas.integrated@assays$integrated@data), 
                                     meta = pancreas.integrated@meta.data, 
                                     method = 'irlba', 
                                     normalization = FALSE,
@@ -196,7 +196,7 @@ tictoc::tic()
 # the raw counts
 # we specify that metamoRph should transform the counts data 
 # using the "Seurat" approach instead of the default "cpm" approach
-query_morphed <-  metamoRph::metamoRph(pancreas.query@assays$RNA@counts, 
+query_morphed <-  metamoRph::metamoRph(as.matrix(pancreas.query@assays$RNA@counts), 
                                        reference_obj$PCA$rotation[,1:30], 
                                        center_scale = reference_obj$center_scale, 
                                        sample_scale = 'seurat')
@@ -259,7 +259,7 @@ scmerge_correction <- scMerge2(dat[hvg_genes,],
                                verbose = FALSE,
                                seed = '2023.0723')
 # pull corrected matrix out of the scmerge2 object
-corrected_dat <- scmerge_correction$newY
+corrected_dat <- scmerge_correction$newY %>% as.matrix()
 # again we turn off normalization as the scmerge corrected
 # data has already been cpm and log1p normalized
 scmerge2_batch_cor_timing <- tictoc::toc()
@@ -275,17 +275,17 @@ reference_obj <- metamoRph::run_pca(corrected_dat,
 
 
 # run umap
-ref_umap_scMerge2 <- uwot::umap(reference_obj$PCA$x[,1:30],
+ref_umap_scMerge2 <- uwot::umap(as.matrix(reference_obj$PCA$x[,1:30]),
                                 metric = 'cosine',
                                 ret_model = TRUE )
 metamoRph_ref_with_scmerge2_correct_counts <- tictoc::toc()
-a <- quick_plotter(ref_umap_scMerge2$embedding, pancreas.integrated@meta.data, 'celltype') +
+a <- quick_plotter(ref_umap_scMerge2$embedding, reference_obj$meta, 'celltype') +
   ggtitle("Reference: celseq, celseq2, smartseq2") 
 # create projected PCA space with the new data via
 # metamoRph's matrix multplication 
 
 tictoc::tic()
-query_morphed <-  metamoRph::metamoRph(pancreas.query@assays$RNA@counts, 
+query_morphed <-  metamoRph::metamoRph(as.matrix(pancreas.query@assays$RNA@counts), 
                                        reference_obj$PCA$rotation[,1:30], 
                                        center_scale = reference_obj$center_scale)
 
@@ -293,7 +293,7 @@ query_morphed <-  metamoRph::metamoRph(pancreas.query@assays$RNA@counts,
 
 
 # build cell type label model
-ml <- metamoRph::model_build(data.frame(reference_obj$PCA$x[,1:30]),
+ml <- metamoRph::model_build(as.matrix(reference_obj$PCA$x[,1:30]),
                              meta$celltype)
 # apply the model
 ma <- metamoRph::model_apply(ml, query_morphed, pancreas.query@meta.data$celltype)
@@ -305,7 +305,7 @@ paste("# Wrong:", ma %>% filter(sample_label != predict) %>% nrow())
 
 # project the morphed PCA space of the new data onto the existing
 # PCA we built above
-umap_proj <- umap_transform(query_morphed[,1:30], ref_umap)
+umap_proj <- umap_transform(query_morphed[,1:30], ref_umap_scMerge2)
 
 b <- quick_plotter(umap_proj, pancreas.query@meta.data, 'celltype') +
   ggtitle("Query: fluidigmc1")
@@ -321,7 +321,7 @@ Full Seurat is the slowest approach.
 
 metamoRph IS NOT A BATCH CORRECTION tool and thus there is nothing to record in the "Batch Correction" category for metamoRph.
 
-Building the reference data in Seurat is about 2x faster than metamoRph. I plan on trying to figure out *why* that is the case. In theory I would expect them to be approximately the same.
+Building the reference data in Seurat or metamoRph is about the same time. The slowest step is identical between the two - the irlba PCA/SVD dimensionality reduction.
 
 Projecting the new data onto the reference is about 20x faster in metamoRph compared to Seurat.
 
