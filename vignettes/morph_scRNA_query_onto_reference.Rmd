@@ -1,7 +1,7 @@
 ---
 title: "Transfer Labels from a Retina scRNA Reference onto a Query Dataset"
 output: html_document
-date: 2023-07-25"
+date: "2023-07-25"
 vignette: >
   %\VignetteIndexEntry{Transfer Labels from a Retina scRNA Reference onto a Query Dataset}
   %\VignetteEngine{knitr::rmarkdown}

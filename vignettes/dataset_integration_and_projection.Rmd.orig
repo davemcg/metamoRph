@@ -15,7 +15,8 @@ knitr::opts_chunk$set(
   warning = FALSE,
   error = FALSE,
   message = FALSE,
-  fig.width = 10
+  fig.width = 10,
+  dpi=300
 )
 ```
 
@@ -145,7 +146,7 @@ p1 + p2
 
 The first approach we demonstrate is to directly use Seurat's corrected counts from the code chunk above in building a "metamoRph" reference and then projecting/morphing the new data onto it. Read the commented lines in the code block to see explanations of why certain parameters were used in metamoRph.
 
-```{r seurat_metamoRph_collab, fig.width=10, fig.height=4}
+```{r seurat_metamoRph_collab, fig.width=10, fig.height=6}
 tictoc::tic()
 
 # here we pull the corrected counts from the `integrated` slot
@@ -235,7 +236,7 @@ we give the raw counts to `metamoRph::normalize_data` which is used internally b
 `metamoRph::run_pca` to library and log1p normalize the counts as required by [scMerge2](https://www.nature.com/articles/s41467-023-39923-2). We find the top 2000 HVG and 
 feed this matrix into scMerge2 to generate batch correct counts. We use this batch corrected counts to build our metamoRph PCA reference, then project/morph the new data on it. We use the projected/morphed PCA space to make a new UMAP and move labels over, as we have done earlier. 
 
-```{r scMerge2, fig.width=10, fig.height=4}
+```{r scMerge2 metamorph umap, fig.width=10, fig.height=6}
 # metaMorph 
 tictoc::tic()
 # cpm and log1p norm the data
@@ -325,7 +326,7 @@ Building the reference data in Seurat or metamoRph is about the same time. The s
 
 Projecting the new data onto the reference is about 20x faster in metamoRph compared to Seurat.
 
-```{r batch correction timings, fig.width=14, fig.height=3}
+```{r batch correction timings, fig.width=11, fig.height=3}
 batch_correction_timing <- c(
   substr(seurat_integration_timing$callback_msg, 1,4) %>% as.numeric(),
   substr(scmerge2_batch_cor_timing$callback_msg, 1,4) %>% as.numeric()
@@ -371,7 +372,7 @@ bind_rows(data.frame(batch_correction_timing) %>%
 # Accuracy of Label Transfer
 
 All three approaches have highly similar accuracy. I guess if you are getting really nit picky the Seurat counts used in metamoRph are a touch worse than full Seurat and the scMerge2/Seurat approach is a bit better. But all work pretty well in my opinion.
-```{r batch correction accuracy, fig.width=6, fig.height=5}
+```{r batch correction accuracy, fig.width=8, fig.height=3}
 accuracy <- c(seurat_default_accuracy,
   seurat_metamorph_accuracy,
   scmerge2_metamorph_accuracy

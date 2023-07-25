@@ -193,7 +193,7 @@ Given the UMAP viz (cue Lior Pachter screaming) probably a few of those
 <span><span class="va">pancreas.integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/RunPCA.html" class="external-link">RunPCA</a></span><span class="op">(</span><span class="va">pancreas.integrated</span>, npcs <span class="op">=</span> <span class="fl">30</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">pancreas.integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/RunUMAP.html" class="external-link">RunUMAP</a></span><span class="op">(</span><span class="va">pancreas.integrated</span>, reduction <span class="op">=</span> <span class="st">"pca"</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">seurat_rebuild_analysis_on_corrected_data_timing</span> <span class="op">&lt;-</span> <span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 11.342 sec elapsed</span></span>
+<span><span class="co">#&gt; 11.549 sec elapsed</span></span>
 <span><span class="co"># p1 &lt;- DimPlot(pancreas.integrated, reduction = 'umap', group.by = 'tech') p2 &lt;-</span></span>
 <span><span class="co"># DimPlot(pancreas.integrated, reduction = 'umap', group.by = 'celltype', label = TRUE, repel</span></span>
 <span><span class="co"># = TRUE) + NoLegend() p1 + p2</span></span>
@@ -221,7 +221,7 @@ Given the UMAP viz (cue Lior Pachter screaming) probably a few of those
 <span></span>
 <span><span class="co"># end timing BEFOFE the plotting step so we don't also compare plotting efficiency</span></span>
 <span><span class="va">seurat_projection_timing</span> <span class="op">&lt;-</span> <span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 15.439 sec elapsed</span></span>
+<span><span class="co">#&gt; 15.34 sec elapsed</span></span>
 <span></span>
 <span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">pancreas.integrated</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"celltype"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, label.size <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>    repel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Reference annotations"</span><span class="op">)</span></span>
@@ -256,7 +256,7 @@ parameters were used in metamoRph.</p>
 <span><span class="co"># full umap model returned this is required downstream</span></span>
 <span><span class="va">ref_umap</span> <span class="op">&lt;-</span> <span class="fu">uwot</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/uwot/man/umap.html" class="external-link">umap</a></span><span class="op">(</span><span class="va">reference_obj</span><span class="op">$</span><span class="va">PCA</span><span class="op">$</span><span class="va">x</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">30</span><span class="op">]</span>, metric <span class="op">=</span> <span class="st">"cosine"</span>, ret_model <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">metamoRph_build_ref_from_seurat_counts</span> <span class="op">&lt;-</span> <span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 8.896 sec elapsed</span></span>
+<span><span class="co">#&gt; 8.702 sec elapsed</span></span>
 <span></span>
 <span><span class="co"># plotting code first we are going to stick some of the first lines into a little function to</span></span>
 <span><span class="co"># reduce copy/pasting for the later plots</span></span>
@@ -308,7 +308,7 @@ parameters were used in metamoRph.</p>
 <span><span class="va">umap_proj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/uwot/man/umap_transform.html" class="external-link">umap_transform</a></span><span class="op">(</span><span class="va">query_morphed</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">30</span><span class="op">]</span>, <span class="va">ref_umap</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">seurat_metamorph_project_timing</span> <span class="op">&lt;-</span> <span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.739 sec elapsed</span></span>
+<span><span class="co">#&gt; 0.747 sec elapsed</span></span>
 <span></span>
 <span><span class="va">b</span> <span class="op">&lt;-</span> <span class="fu">quick_plotter</span><span class="op">(</span><span class="va">umap_proj</span>, <span class="va">pancreas.query</span><span class="op">@</span><span class="va">meta.data</span>, <span class="st">"celltype"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Query: fluidigmc1"</span><span class="op">)</span></span>
 <span></span>
@@ -350,7 +350,7 @@ as we have done earlier.</p>
 <span><span class="co"># again we turn off normalization as the scmerge corrected data has already been cpm and log1p</span></span>
 <span><span class="co"># normalized</span></span>
 <span><span class="va">scmerge2_batch_cor_timing</span> <span class="op">&lt;-</span> <span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 11.555 sec elapsed</span></span>
+<span><span class="co">#&gt; 11.978 sec elapsed</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">reference_obj</span> <span class="op">&lt;-</span> <span class="fu">metamoRph</span><span class="fu">::</span><span class="fu"><a href="../reference/run_pca.html">run_pca</a></span><span class="op">(</span><span class="va">corrected_dat</span>, meta <span class="op">=</span> <span class="va">meta</span>, method <span class="op">=</span> <span class="st">"irlba"</span>, irlba_n <span class="op">=</span> <span class="fl">30</span>,</span>
@@ -361,7 +361,7 @@ as we have done earlier.</p>
 <span><span class="co"># run umap</span></span>
 <span><span class="va">ref_umap_scMerge2</span> <span class="op">&lt;-</span> <span class="fu">uwot</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/uwot/man/umap.html" class="external-link">umap</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">reference_obj</span><span class="op">$</span><span class="va">PCA</span><span class="op">$</span><span class="va">x</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">30</span><span class="op">]</span><span class="op">)</span>, metric <span class="op">=</span> <span class="st">"cosine"</span>, ret_model <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">metamoRph_ref_with_scmerge2_correct_counts</span> <span class="op">&lt;-</span> <span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 6.115 sec elapsed</span></span>
+<span><span class="co">#&gt; 5.986 sec elapsed</span></span>
 <span><span class="va">a</span> <span class="op">&lt;-</span> <span class="fu">quick_plotter</span><span class="op">(</span><span class="va">ref_umap_scMerge2</span><span class="op">$</span><span class="va">embedding</span>, <span class="va">reference_obj</span><span class="op">$</span><span class="va">meta</span>, <span class="st">"celltype"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Reference: celseq, celseq2, smartseq2"</span><span class="op">)</span></span>
 <span><span class="co"># create projected PCA space with the new data via metamoRph's matrix multplication</span></span>
 <span></span>
@@ -401,11 +401,11 @@ as we have done earlier.</p>
 <span></span>
 <span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span><span class="va">a</span>, <span class="va">b</span><span class="op">)</span></span></code></pre></div>
 <div class="float">
-<img src="figure/scMerge2-1.png" alt="plot of chunk scMerge2"><div class="figcaption">plot of chunk scMerge2</div>
+<img src="figure/scMerge2%20metamorph%20umap-1.png" alt="plot of chunk scMerge2 metamorph umap"><div class="figcaption">plot of chunk scMerge2 metamorph umap</div>
 </div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">metamorph_scmerge2_morph_timing</span> <span class="op">&lt;-</span> <span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 1.005 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 1.023 sec elapsed</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="timings">Timings<a class="anchor" aria-label="anchor" href="#timings"></a>

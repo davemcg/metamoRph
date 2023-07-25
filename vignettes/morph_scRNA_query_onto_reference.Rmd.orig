@@ -15,7 +15,8 @@ knitr::opts_chunk$set(
   warning = FALSE,
   error = FALSE,
   message = FALSE,
-  fig.width = 6
+  fig.width = 6,
+  dpi=300
 )
 ```
 
@@ -151,7 +152,7 @@ You may be wondering why I'm using something as simple as a linear regression. M
 
 As we already have labels for the query data we can also give `metamoRph::model_apply` the known labels and the function will output them with the guessed labels. That way you can quickly check the accuracy, in this case it is near 98%.
 
-```{r}
+```{r retina scRNA small example}
 ml <- metamoRph::model_build(mm_pca$PCA$x[,1:50], 
                   mm_pca$meta %>% pull(CellType_predict))
 ma <- metamoRph::model_apply(ml, proj, new_data@meta.data$CellType_predict)
@@ -159,5 +160,4 @@ ma <- metamoRph::model_apply(ml, proj, new_data@meta.data$CellType_predict)
 ma %>% head()
 # overall accuracy
 ma %>% filter(sample_label == predict) %>% nrow() / ma %>% filter(!is.na(sample_label)) %>% nrow()
-
 ```
