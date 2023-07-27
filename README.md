@@ -85,10 +85,10 @@ projected_pca <- metamoRph(t(log2(new_data)),
 
 # Some Related Tools
 
-  - (ProjecTILs)[https://github.com/carmonalab/ProjecTILs]
+  - [ProjecTILs](https://github.com/carmonalab/ProjecTILs)
     - scRNA/Seurat based tool that uses a similar approach to project data (essentialy multiplying the new against the rotation matrix)
-  - (Seurat)[https://satijalab.org/seurat/articles/integration_mapping.html]
+  - [Seurat](https://satijalab.org/seurat/articles/integration_mapping.html)
     - The big kahuna itself. scRNA analysis playground.
-  - (projectR)[https://www.bioconductor.org/packages/release/bioc/html/projectR.html]
+  - [projectR](https://www.bioconductor.org/packages/release/bioc/html/projectR.html)
     - Can transfer data onto PCA *and* NMF 
     - At least for PCA does not provide any guardrails for properly scaling the query data
