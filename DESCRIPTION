@@ -1,6 +1,6 @@
 Package: metamoRph
 Title: Metadata projection via data morphing with matrix factorization multiplication
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: 
     person("David", "McGaughey", , "mcgaughey@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9224-2888"))
@@ -32,6 +32,7 @@ Suggests:
     projectR,
     knitr,
     rmarkdown,
+    org.Hs.eg.db,
     scMerge (>= 1.16.0),
     Seurat (>= 4.0),
     tictoc,

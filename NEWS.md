@@ -1,3 +1,10 @@
+# metamoRph 0.2.1
+
+  - new vignette on building a sex predictor
+  - fixed bug where giving the sample labels as a numeric/integer vector threw an error 
+  (they get used as column names at one point and R hates that)
+  - add warning to `metamoRph` function when center/scale values not provided
+  
 # metamoRph 0.2.0
 
   - two new functions, `select_HVG` and `normalize_data` have been pulled
