@@ -27,6 +27,10 @@ model_build <- function(training_data,
                         BPPARAM = BiocParallel::SerialParam(),
                         model = 'lm',
                         verbose = TRUE){
+  # ensure the training labels do not start with a digit, as the 
+  # model_apply relies on column names
+  # to align the data ...which cannot start with a digit
+  training_labels = paste0('metamoRphPrefix_', training_labels)
   # cut down to requested PC
   ## issue warning if num_PCs > number of actual PC
   if (ncol(training_data) < num_PCs){
@@ -93,6 +97,9 @@ model_build <- function(training_data,
   for (i in 1:length(models)){
     model_out[[models[[i]]$target]] <- models[[i]]$model
   }
+  
+  # remove prefix
+  names(model_out) <- gsub("metamoRphPrefix_","",names(model_out))
   return(model_out)
 }
 
@@ -117,7 +124,7 @@ model_apply <- function(list_of_models,
                         experiment_data,
                         experiment_labels = '',
                         return_predictions = FALSE){
-
+  
   sample_id <- sample_label <- max_score <- predict_stringent <- NULL
   predictions <- list()
   for (i in names(list_of_models)){
@@ -151,9 +158,18 @@ model_apply <- function(list_of_models,
            predict_stringent = case_when(max_score < 0.5 ~ 'Unknown',
                                          TRUE ~ predict)) %>%
     relocate(max_score, .after = predict_stringent)
+
+
   if (return_predictions){
+    # remove prefix before outputting results
+    colnames(predictions) <- gsub('metamoRphPrefix_','',colnames(predictions))
     predictions
   } else{
+
+    # remove prefix before outputting results
+    calls <- calls %>% mutate(predict = gsub('metamoRphPrefix_','',predict), 
+                                          predict_second = gsub('metamoRphPrefix_','',predict_second),
+                                          predict_stringent = gsub('metamoRphPrefix_','',predict_stringent))
     calls
   }
 }
