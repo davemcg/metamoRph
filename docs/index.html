@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="index.html">metamoRph</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,6 +44,7 @@
     <a class="dropdown-item" href="articles/So_many_ways_to_screw_up_PCA_projection.html">So many ways to screw up PCA projection</a>
     <a class="dropdown-item" href="articles/real_data_testing.html">Metadata Label Transfer on Real Data</a>
     <a class="dropdown-item" href="articles/build_a_brain_region_predictor.html">Build and Apply a Human Brain Region Predictor in 60 seconds or less</a>
+    <a class="dropdown-item" href="articles/Build_and_Apply_a_Sex_Predictor.html">Build and Apply a Sex Predictor and Pull Apart the Why</a>
     <a class="dropdown-item" href="articles/morph_scRNA_query_onto_reference.html">Transfer Labels from a Retina scRNA Reference onto a Query Dataset</a>
     <a class="dropdown-item" href="articles/dataset_integration_and_projection.html">Batch Corrected metamoRph Reference</a>
   </div>
@@ -141,17 +142,20 @@
 <h1 id="some-related-tools">Some Related Tools<a class="anchor" aria-label="anchor" href="#some-related-tools"></a>
 </h1>
 <ul>
-<li>(ProjecTILs)[<a href="https://github.com/carmonalab/ProjecTILs" class="external-link uri">https://github.com/carmonalab/ProjecTILs</a>]
+<li>
+<a href="https://github.com/carmonalab/ProjecTILs" class="external-link">ProjecTILs</a>
 <ul>
 <li>scRNA/Seurat based tool that uses a similar approach to project data (essentialy multiplying the new against the rotation matrix)</li>
 </ul>
 </li>
-<li>(Seurat)[<a href="https://satijalab.org/seurat/articles/integration_mapping.html" class="external-link uri">https://satijalab.org/seurat/articles/integration_mapping.html</a>]
+<li>
+<a href="https://satijalab.org/seurat/articles/integration_mapping.html" class="external-link">Seurat</a>
 <ul>
 <li>The big kahuna itself. scRNA analysis playground.</li>
 </ul>
 </li>
-<li>(projectR)[<a href="https://www.bioconductor.org/packages/release/bioc/html/projectR.html" class="external-link uri">https://www.bioconductor.org/packages/release/bioc/html/projectR.html</a>]
+<li>
+<a href="https://www.bioconductor.org/packages/release/bioc/html/projectR.html" class="external-link">projectR</a>
 <ul>
 <li>Can transfer data onto PCA <em>and</em> NMF</li>
 <li>At least for PCA does not provide any guardrails for properly scaling the query data</li>

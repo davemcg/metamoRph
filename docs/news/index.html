@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">metamoRph</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,6 +27,7 @@
     <a class="dropdown-item" href="../articles/So_many_ways_to_screw_up_PCA_projection.html">So many ways to screw up PCA projection</a>
     <a class="dropdown-item" href="../articles/real_data_testing.html">Metadata Label Transfer on Real Data</a>
     <a class="dropdown-item" href="../articles/build_a_brain_region_predictor.html">Build and Apply a Human Brain Region Predictor in 60 seconds or less</a>
+    <a class="dropdown-item" href="../articles/Build_and_Apply_a_Sex_Predictor.html">Build and Apply a Sex Predictor and Pull Apart the Why</a>
     <a class="dropdown-item" href="../articles/morph_scRNA_query_onto_reference.html">Transfer Labels from a Retina scRNA Reference onto a Query Dataset</a>
     <a class="dropdown-item" href="../articles/dataset_integration_and_projection.html">Batch Corrected metamoRph Reference</a>
   </div>
@@ -48,6 +49,12 @@
       
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.1" id="metamorph-021">metamoRph 0.2.1<a class="anchor" aria-label="anchor" href="#metamorph-021"></a></h2>
+<ul><li>new vignette on building a sex predictor</li>
+<li>fixed bug where giving the sample labels as a numeric/integer vector threw an error (they get used as column names at one point and R hates that)</li>
+<li>add warning to <code>metamoRph</code> function when center/scale values not provided</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="metamorph-020">metamoRph 0.2.0<a class="anchor" aria-label="anchor" href="#metamorph-020"></a></h2>
 <ul><li>two new functions, <code>select_HVG</code> and <code>normalize_data</code> have been pulled out of partially duplicated code in <code>run_pca</code> and <code>metamoRph</code> to ease future normalization additions and to modularize the code-base</li>

@@ -2,12 +2,13 @@ pandoc: 3.1.1
 pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
+  Build_and_Apply_a_Sex_Predictor: Build_and_Apply_a_Sex_Predictor.html
   So_many_ways_to_screw_up_PCA_projection: So_many_ways_to_screw_up_PCA_projection.html
   build_a_brain_region_predictor: build_a_brain_region_predictor.html
   dataset_integration_and_projection: dataset_integration_and_projection.html
   morph_scRNA_query_onto_reference: morph_scRNA_query_onto_reference.html
   real_data_testing: real_data_testing.html
-last_built: 2023-07-25T18:47Z
+last_built: 2023-08-29T14:40Z
 urls:
   reference: https://davemcg.github.io/metamoRph/reference
   article: https://davemcg.github.io/metamoRph/articles
