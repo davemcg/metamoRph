@@ -160,6 +160,12 @@ metamoRph <- function(new_counts,
                       log1p = TRUE){
   value <- ensgene <- name <- NULL # https://www.r-bloggers.com/2019/08/no-visible-binding-for-global-variable/
   
+  if (is.null(center_scale)){
+    warning(
+"No center and scale values provided. Projection may be erroneous 
+(unless you already ensured your input data
+is scaled the same as the rotation/PCA data input data")
+  }
   if (normalization){
     new_scale <- normalize_data(new_counts, 
                                 sample_scale = sample_scale,
