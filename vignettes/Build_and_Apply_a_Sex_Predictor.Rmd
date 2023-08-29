@@ -1,0 +1,403 @@
+---
+title: "Build and Apply a Sex Predictor and Pull Apart the Why"
+output: rmarkdown::html_vignette
+date: "2023-08-28"
+vignette: >
+  %\VignetteIndexEntry{Build and Apply a Sex Predictor and Pull Apart the Why}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+# Introduction
+The GTEx resource contains thousands of human RNA-seq tissues. Here we use the recount3 package
+to pull the GTEx brain RNA-seq datasets, use a subset to build a sex predictor, then apply it
+to the remaining GTEx brain data **and** bring in a *outside* eye studies to see whether the
+model still is useful.
+
+
+# Pull in GTEx brain counts via recount3
+
+We show the `gtex.sex` to see the sexes of the brain samples. `1` is male and `2` is female.
+
+
+```r
+library(ggplot2)
+library(dplyr)
+library(recount3)
+library(metamoRph)
+human_projects <- available_projects()
+
+project_info <- subset(human_projects, file_source == "gtex" & project_type == "data_sources" &
+    project == "BRAIN")
+
+rse_gene_brain <- create_rse(project_info)
+
+colData(rse_gene_brain)$gtex.sex %>%
+    table()
+```
+
+```
+## .
+##    1    2 
+## 2095  836
+```
+
+
+# Extract read counts
+
+
+
+```r
+brain_counts <- compute_read_counts(rse_gene_brain)
+```
+
+# Build metadata table for the "train" and "project" data
+The `train` data is used to build the PCA object. That PCA data is used in the model building. The `project` data is then morphed/projected onto the PCA space with `metamoRph` and the output from that is used by `model_apply` to guess the sex.
+
+This all happens in less than 10 seconds on my MacBook.
+
+
+
+```r
+set.seed(20230824)
+brain_meta <- colData(rse_gene_brain)
+# More human readable labels for the Sex
+brain_meta$Sex <- ifelse(colData(rse_gene_brain)$gtex.sex == 1, "Male", "Female")
+train_meta <- brain_meta %>%
+    as_tibble(rownames = "id") %>%
+    group_by(Sex) %>%
+    sample_n(40)
+project_meta <- brain_meta %>%
+    as_tibble(rownames = "id") %>%
+    filter(!id %in% train_meta$id)
+# remove .digit ending to make a bit more portable across different references
+row.names(brain_counts) <- gsub("\\.\\d+", "", row.names(brain_counts))
+
+train_counts <- brain_counts[, train_meta$id]
+project_counts <- brain_counts[, project_meta$id]
+
+gtex_sex <- run_pca(train_counts, train_meta, irlba_n = 50)
+
+sex_model <- model_build(gtex_sex$PCA$x, gtex_sex$meta %>%
+    pull(Sex), num_PCs = 20, verbose = FALSE)
+
+projected_data <- metamoRph(project_counts, gtex_sex$PCA$rotation, gtex_sex$center_scale)
+# apply model
+label_guesses <- model_apply(sex_model, projected_data, project_meta %>%
+    pull(Sex))
+```
+
+# Accuracy
+
+100%
+
+```r
+num_correct <- label_guesses %>%
+    filter(sample_label == predict) %>%
+    nrow()
+num_wrong <- label_guesses %>%
+    filter(sample_label != predict) %>%
+    nrow()
+
+# accuracy
+num_correct/(num_correct + num_wrong) * 100
+```
+
+```
+## [1] 100
+```
+
+# Identify the two most useful PC for Sex
+
+Both models rely most on PC7 and PC8
+
+```r
+sex_model$Male$coefficients %>%
+    tibble::enframe() %>%
+    arrange(-abs(value)) %>%
+    head(5)
+```
+
+```
+## # A tibble: 5 × 2
+##   name          value
+##   <chr>         <dbl>
+## 1 (Intercept)  0.5   
+## 2 PC7         -0.0955
+## 3 PC8         -0.0676
+## 4 PC6          0.0347
+## 5 PC16         0.0337
+```
+
+```r
+sex_model$Female$coefficients %>%
+    tibble::enframe() %>%
+    arrange(-abs(value)) %>%
+    head(5)
+```
+
+```
+## # A tibble: 5 × 2
+##   name          value
+##   <chr>         <dbl>
+## 1 (Intercept)  0.500 
+## 2 PC7          0.0955
+## 3 PC8          0.0676
+## 4 PC6         -0.0347
+## 5 PC16        -0.0337
+```
+# Identify top genes for PC7
+
+As recount3 used the "ENGS" identifier, we have to pull the gene IDs from another source.
+In this case, `org.Hs.eg.db`.
+
+We show the genes that contribute most to each PC (both top and bottom five).
+
+```r
+rotation <- gtex_sex$PCA$rotation[, c("PC7", "PC8")] %>%
+    as_tibble(rownames = "ENSEMBL")
+
+library(org.Hs.eg.db)
+conv_table <- select(org.Hs.eg.db, keys = rotation$ENSEMBL, columns = c("SYMBOL", "GENENAME", "MAP",
+    "GENETYPE"), keytype = "ENSEMBL")
+
+rotation <- rotation %>%
+    left_join(conv_table, by = "ENSEMBL")
+bind_rows(rotation %>%
+    arrange(PC7) %>%
+    head(5), rotation %>%
+    arrange(-PC7) %>%
+    head(5)) %>%
+    arrange(-abs(PC7))
+```
+
+```
+## # A tibble: 10 × 7
+##    ENSEMBL             PC7     PC8 SYMBOL  GENENAME                                 MAP      GENETYPE      
+##    <chr>             <dbl>   <dbl> <chr>   <chr>                                    <chr>    <chr>         
+##  1 ENSG00000114374 -0.195  -0.138  USP9Y   ubiquitin specific peptidase 9 Y-linked  Yq11.221 protein-coding
+##  2 ENSG00000114374 -0.195  -0.138  TTTY15  testis-specific transcript, Y-linked 15  Yq11.221 ncRNA         
+##  3 ENSG00000067048 -0.191  -0.141  DDX3Y   DEAD-box helicase 3 Y-linked             Yq11.221 protein-coding
+##  4 ENSG00000131002 -0.191  -0.137  <NA>    <NA>                                     <NA>     <NA>          
+##  5 ENSG00000012817 -0.188  -0.137  KDM5D   lysine demethylase 5D                    Yq11.223 protein-coding
+##  6 ENSG00000270641  0.181   0.127  TSIX    TSIX transcript, XIST antisense RNA      Xq13.2   ncRNA         
+##  7 ENSG00000229807  0.181   0.126  XIST    X inactive specific transcript           Xq13.2   ncRNA         
+##  8 ENSG00000274655  0.167   0.132  <NA>    <NA>                                     <NA>     <NA>          
+##  9 ENSG00000120738  0.0957 -0.0459 EGR1    early growth response 1                  5q31.2   protein-coding
+## 10 ENSG00000180828  0.0853 -0.0247 BHLHE22 basic helix-loop-helix family member e22 8q12.3   protein-coding
+```
+
+# Visualize the rotations
+
+We see how the chrY genes are pointing towards the male samples and vice versa for the chrX genes. 
+
+```r
+top_rotations <- rotation %>%
+    filter(SYMBOL %in% c("USP9Y", "TTTY15", "TSIX", "XIST"))
+
+rotation_multipler_first <- 30
+rotation_multipler_second <- 30
+
+bind_rows(projected_data %>%
+    as_tibble(rownames = "id")) %>%
+    left_join(colData(rse_gene_brain) %>%
+        as_tibble(rownames = "id"), by = "id") %>%
+    left_join(label_guesses, by = c(id = "sample_id")) %>%
+    mutate(Sex = case_when(gtex.sex == 1 ~ "Male", gtex.sex == 2 ~ "Female")) %>%
+    ggplot(aes(x = PC7, y = PC8)) + geom_point(alpha = 0.5, aes(color = Sex)) + geom_segment(data = top_rotations,
+    arrow = arrow(), aes(x = 0, y = 0, xend = .data[["PC7"]] * rotation_multipler_first, yend = .data[["PC8"]] *
+        rotation_multipler_second)) + ggrepel::geom_label_repel(data = top_rotations, aes(x = .data[["PC7"]] *
+    rotation_multipler_first, y = .data[["PC8"]] * rotation_multipler_second, label = GENENAME)) +
+    cowplot::theme_cowplot()
+```
+
+![plot of chunk sex_rotations](figure/sex_rotations-1.png)
+
+
+# Does the model work on outside data?
+EiaD data, filtered to the sex-labelled *eye* data alone (as EiaD also contains some GTEx)
+
+```r
+# outside brain prefrontal cortex (BA9)
+eiad_counts <- data.table::fread("https://hpc.nih.gov/~mcgaugheyd/eyeIntegration/2023/gene_counts.csv.gz")
+eiad_matrix <- eiad_counts[, 2:ncol(eiad_counts)] %>%
+    as.matrix()
+row.names(eiad_matrix) <- stringr::str_extract(eiad_counts$Gene, "ENSG\\d+")
+
+# eiad metadata emeta <-
+# data.table::fread('https://hpc.nih.gov/~mcgaugheyd/eyeIntegration/2023/eyeIntegration_meta_2023_03_03.csv.gz')
+emeta <- data.table::fread("~/Downloads/eyeIntegration23_meta_2023_08_28.csv")
+## ID female and male samples by searching for 'female'' and ' male'' in the sample_title and
+## sample_attribute fields
+female_accessions <- c(emeta %>%
+    filter(grepl("female", sample_title)) %>%
+    pull(run_accession), emeta %>%
+    filter(grepl("female", sample_attribute)) %>%
+    pull(run_accession)) %>%
+    unique()
+male_accessions <- c(emeta %>%
+    filter(grepl(" male", sample_title)) %>%
+    pull(run_accession), emeta %>%
+    filter(grepl(" male", sample_attribute)) %>%
+    pull(run_accession)) %>%
+    unique()
+
+emeta <- emeta %>%
+    mutate(Sex = case_when(run_accession %in% female_accessions ~ "Female", run_accession %in% male_accessions ~
+        "Male"))
+
+eiad_mat_sexed <- eiad_matrix[, (emeta %>%
+    filter(Cohort == "Eye", !is.na(Sex)) %>%
+    pull(sample_accession))]
+```
+
+Run `metamoRph` to transform the EiaD data into the same PCA space we made earlier with the GTEx brain data.
+Then use `model_apply` to predict the sex.
+
+
+```r
+projected_data_outside <- metamoRph(eiad_mat_sexed, gtex_sex$PCA$rotation, gtex_sex$center_scale)
+label_guesses_outside <- model_apply(sex_model, projected_data_outside, emeta %>%
+    filter(Cohort == "Eye", !is.na(Sex)) %>%
+    pull(Sex) %>%
+    stringr::str_to_title())
+```
+
+## Accuracy
+
+99.5% Three out of 619 labelled sexes are wrong. The three that don't match the label have pretty high scores (0.772 to 0.938). 
+
+```r
+num_correct <- label_guesses_outside %>%
+    filter(sample_label == predict) %>%
+    nrow()
+num_wrong <- label_guesses_outside %>%
+    filter(sample_label != predict) %>%
+    nrow()
+
+# accuracy
+num_correct/(num_correct + num_wrong) * 100
+```
+
+```
+## [1] 100
+```
+
+```r
+label_guesses_outside %>%
+    filter(sample_label != predict) %>%
+    dplyr::select(-predict_second, -predict_stringent)
+```
+
+```
+## # A tibble: 0 × 4
+## # ℹ 4 variables: sample_id <chr>, sample_label <chr>, predict <chr>, max_score <dbl>
+```
+
+### Labels wrong?
+
+I'm a bit more suspicious that the labels themselves are wrong. The first three samples are labelled as females but the ML thinks they are male. The fourth sample is a female both in ML and label. The fifth sample is male in both label and ML. We can see the large difference in CPM of the chrY gene USP9Y which suggest these three are mislabelled. 
+
+
+```r
+metamoRph::normalize_data(eiad_matrix)[c("ENSG00000114374"), c("DRS161828", "DRS161832", "SRS11824523",
+    "DRS161830", "DRS161829"), drop = FALSE] %>%
+    t() %>%
+    as_tibble(rownames = "sample_id") %>%
+    left_join(label_guesses_outside %>%
+        dplyr::select(sample_id:predict))
+```
+
+```
+## # A tibble: 5 × 4
+##   sample_id   ENSG00000114374 sample_label predict
+##   <chr>                 <dbl> <chr>        <chr>  
+## 1 DRS161828             3.73  <NA>         <NA>   
+## 2 DRS161832             4.15  <NA>         <NA>   
+## 3 SRS11824523           3.73  <NA>         <NA>   
+## 4 DRS161830             0.228 <NA>         <NA>   
+## 5 DRS161829             4.12  <NA>         <NA>
+```
+
+# Save for future use
+
+This is admittedly a bit rough, as I have not re-used existing models in anger much. 
+
+There are (up to) two "things" to save:
+
+1. The PCA info (`gtex_sex`). You only *need* the rotation matrix (`gtex_sex$PCA$rotation`) and the center/scale values (`gtex_sex$center_scale`). The matrix and center/scale values can be saved as text files. But it is much easier to just `save` the object itself, which also has the full `prcomp` object and the metadata. Then you can `load` it later. But if you need to pare it down for "production" use, then go ahead and just save the rotation matrix and center/scale values however you prefer.
+2. The trained model (`sex_model`). I suggest you just save/load via `save` and `load`. You can trim the [fat](https://win-vector.com/2014/05/30/trimming-the-fat-from-glm-models-in-r/), if you are building a huge model. 
+
+
+```r
+system("mkdir -p ~/data/metamoRph_models/")
+save(gtex_sex, sex_model, file = "~/data/metamoRph_models/sex.Rdata")
+```
+
+# Session Info
+
+
+```r
+sessionInfo()
+```
+
+```
+## R version 4.3.0 (2023-04-21)
+## Platform: aarch64-apple-darwin20 (64-bit)
+## Running under: macOS Ventura 13.5
+## 
+## Matrix products: default
+## BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib 
+## LAPACK: /Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
+## 
+## locale:
+## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+## 
+## time zone: America/New_York
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] stats4    stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+##  [1] yaml_2.3.7                  yardstick_1.2.0             workflowsets_1.0.1          workflows_1.1.3             tune_1.1.1                 
+##  [6] tidyr_1.3.0                 tibble_3.2.1                rsample_1.1.1               recipes_1.0.6               purrr_1.0.1                
+## [11] parsnip_1.1.0               modeldata_1.1.0             infer_1.0.4                 dials_1.2.0                 scales_1.2.1               
+## [16] broom_1.0.4                 tidymodels_1.1.0            org.Hs.eg.db_3.17.0         AnnotationDbi_1.61.2        biomaRt_2.55.0             
+## [21] metamoRph_0.2.0             recount3_1.10.2             SummarizedExperiment_1.30.2 Biobase_2.60.0              GenomicRanges_1.52.0       
+## [26] GenomeInfoDb_1.36.1         IRanges_2.34.1              S4Vectors_0.38.1            BiocGenerics_0.46.0         MatrixGenerics_1.12.3      
+## [31] matrixStats_1.0.0           dplyr_1.1.2                 ggplot2_3.4.2               knitr_1.43                 
+## 
+## loaded via a namespace (and not attached):
+##   [1] splines_4.3.0               BiocIO_1.9.2                bitops_1.0-7                filelock_1.0.2              R.oo_1.25.0                
+##   [6] polyclip_1.10-4             hardhat_1.3.0               XML_3.99-0.14               rpart_4.1.19                lifecycle_1.0.3            
+##  [11] edgeR_3.42.2                rprojroot_2.0.3             globals_0.16.2              processx_3.8.1              lattice_0.21-8             
+##  [16] pals_1.7                    MASS_7.3-60                 backports_1.4.1             magrittr_2.0.3              limma_3.56.1               
+##  [21] rmarkdown_2.23              metapod_1.7.0               sessioninfo_1.2.2           cowplot_1.1.1               mapproj_1.2.11             
+##  [26] DBI_1.1.3                   lubridate_1.9.2             maps_3.4.1                  abind_1.4-5                 zlibbioc_1.46.0            
+##  [31] R.utils_2.12.2              RCurl_1.98-1.12             nnet_7.3-19                 tweenr_2.0.2                rappdirs_0.3.3             
+##  [36] ipred_0.9-14                lava_1.7.2.1                GenomeInfoDbData_1.2.10     ggrepel_0.9.3               irlba_2.3.5.1              
+##  [41] listenv_0.9.0               parallelly_1.36.0           dqrng_0.3.0                 pkgdown_2.0.7               DelayedMatrixStats_1.21.0  
+##  [46] codetools_0.2-19            DelayedArray_0.26.7         DT_0.28                     scuttle_1.9.4               xml2_1.3.4                 
+##  [51] ggforce_0.4.1               tidyselect_1.2.0            farver_2.1.1                ScaledMatrix_1.8.1          BiocFileCache_2.7.2        
+##  [56] GenomicAlignments_1.35.1    BiocNeighbors_1.17.1        iterators_1.0.14            survival_3.5-5              foreach_1.5.2              
+##  [61] tictoc_1.2                  tools_4.3.0                 progress_1.2.2              Rcpp_1.0.11                 glue_1.6.2                 
+##  [66] prodlim_2023.03.31          xfun_0.40                   withr_2.5.0                 formatR_1.14                fastmap_1.1.1              
+##  [71] bluster_1.9.1               fansi_1.0.4                 callr_3.7.3                 digest_0.6.33               rsvd_1.0.5                 
+##  [76] timechange_0.2.0            R6_2.5.1                    colorspace_2.1-0            dichromat_2.0-0.1           RSQLite_2.3.1              
+##  [81] R.methodsS3_1.8.2           utf8_1.2.3                  generics_0.1.3              data.table_1.14.8           rtracklayer_1.59.1         
+##  [86] class_7.3-22                prettyunits_1.1.1           httr_1.4.6                  htmlwidgets_1.6.2           S4Arrays_1.0.5             
+##  [91] pkgconfig_2.0.3             gtable_0.3.3                timeDate_4022.108           blob_1.2.4                  GPfit_1.0-8                
+##  [96] SingleCellExperiment_1.22.0 XVector_0.40.0              furrr_0.3.1                 htmltools_0.5.5             png_0.1-8                  
+## [101] gower_1.0.1                 scran_1.27.1                rstudioapi_0.14             rjson_0.2.21                curl_5.0.0                 
+## [106] cachem_1.0.8                stringr_1.5.0               parallel_4.3.0              restfulr_0.0.15             desc_1.4.2                 
+## [111] pillar_1.9.0                grid_4.3.0                  vctrs_0.6.3                 BiocSingular_1.15.0         dbplyr_2.3.2               
+## [116] beachmat_2.15.0             lhs_1.1.6                   cluster_2.1.4               evaluate_0.21               cli_3.6.1                  
+## [121] locfit_1.5-9.7              compiler_4.3.0              Rsamtools_2.15.2            rlang_1.1.1                 crayon_1.5.2               
+## [126] future.apply_1.11.0         labeling_0.4.2              ps_1.7.5                    fs_1.6.3                    stringi_1.7.12             
+## [131] BiocParallel_1.33.11        munsell_0.5.0               Biostrings_2.67.2           Matrix_1.5-4.1              hms_1.1.3                  
+## [136] future_1.32.0               sparseMatrixStats_1.11.1    bit64_4.0.5                 KEGGREST_1.39.0             statmod_1.5.0              
+## [141] highr_0.10                  igraph_1.4.3                memoise_2.0.1               bit_4.0.5                   DiceDesign_1.9
+```
