@@ -35,6 +35,7 @@ Suggests:
     org.Hs.eg.db,
     scMerge (>= 1.16.0),
     Seurat (>= 4.0),
+    stringr,
     tictoc,
     tidymodels,
     testthat (>= 3.0.0)
