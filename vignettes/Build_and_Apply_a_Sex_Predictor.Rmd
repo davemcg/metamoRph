@@ -1,7 +1,7 @@
 ---
 title: "Build and Apply a Sex Predictor and Pull Apart the Why"
 output: rmarkdown::html_vignette
-date: "2023-08-28"
+date: "2023-08-29"
 vignette: >
   %\VignetteIndexEntry{Build and Apply a Sex Predictor and Pull Apart the Why}
   %\VignetteEngine{knitr::rmarkdown}
@@ -226,27 +226,8 @@ eiad_matrix <- eiad_counts[, 2:ncol(eiad_counts)] %>%
     as.matrix()
 row.names(eiad_matrix) <- stringr::str_extract(eiad_counts$Gene, "ENSG\\d+")
 
-# eiad metadata emeta <-
-# data.table::fread('https://hpc.nih.gov/~mcgaugheyd/eyeIntegration/2023/eyeIntegration_meta_2023_03_03.csv.gz')
-emeta <- data.table::fread("~/Downloads/eyeIntegration23_meta_2023_08_28.csv")
-## ID female and male samples by searching for 'female'' and ' male'' in the sample_title and
-## sample_attribute fields
-female_accessions <- c(emeta %>%
-    filter(grepl("female", sample_title)) %>%
-    pull(run_accession), emeta %>%
-    filter(grepl("female", sample_attribute)) %>%
-    pull(run_accession)) %>%
-    unique()
-male_accessions <- c(emeta %>%
-    filter(grepl(" male", sample_title)) %>%
-    pull(run_accession), emeta %>%
-    filter(grepl(" male", sample_attribute)) %>%
-    pull(run_accession)) %>%
-    unique()
-
-emeta <- emeta %>%
-    mutate(Sex = case_when(run_accession %in% female_accessions ~ "Female", run_accession %in% male_accessions ~
-        "Male"))
+# eiad metadata
+emeta <- data.table::fread("https://hpc.nih.gov/~mcgaugheyd/eyeIntegration/2023/eyeIntegration23_meta_2023_08_28.csv.gz")
 
 eiad_mat_sexed <- eiad_matrix[, (emeta %>%
     filter(Cohort == "Eye", !is.na(Sex)) %>%
@@ -267,7 +248,7 @@ label_guesses_outside <- model_apply(sex_model, projected_data_outside, emeta %>
 
 ## Accuracy
 
-99.5% Three out of 619 labelled sexes are wrong. The three that don't match the label have pretty high scores (0.772 to 0.938). 
+99.5% Three out of 619 labelled sexes are wrong. The three that don't match the label have pretty high scores (0.77 to 0.94). 
 
 ```r
 num_correct <- label_guesses_outside %>%
@@ -282,7 +263,7 @@ num_correct/(num_correct + num_wrong) * 100
 ```
 
 ```
-## [1] 100
+## [1] 99.51768
 ```
 
 ```r
@@ -292,8 +273,12 @@ label_guesses_outside %>%
 ```
 
 ```
-## # A tibble: 0 × 4
-## # ℹ 4 variables: sample_id <chr>, sample_label <chr>, predict <chr>, max_score <dbl>
+## # A tibble: 3 × 4
+##   sample_id   sample_label predict max_score
+##   <chr>       <chr>        <chr>       <dbl>
+## 1 DRS161828   Female       Male        0.867
+## 2 DRS161832   Female       Male        0.938
+## 3 SRS11824523 Female       Male        0.772
 ```
 
 ### Labels wrong?
@@ -314,11 +299,11 @@ metamoRph::normalize_data(eiad_matrix)[c("ENSG00000114374"), c("DRS161828", "DRS
 ## # A tibble: 5 × 4
 ##   sample_id   ENSG00000114374 sample_label predict
 ##   <chr>                 <dbl> <chr>        <chr>  
-## 1 DRS161828             3.73  <NA>         <NA>   
-## 2 DRS161832             4.15  <NA>         <NA>   
-## 3 SRS11824523           3.73  <NA>         <NA>   
-## 4 DRS161830             0.228 <NA>         <NA>   
-## 5 DRS161829             4.12  <NA>         <NA>
+## 1 DRS161828             3.73  Female       Male   
+## 2 DRS161832             4.15  Female       Male   
+## 3 SRS11824523           3.73  Female       Male   
+## 4 DRS161830             0.228 Female       Female 
+## 5 DRS161829             4.12  Male         Male
 ```
 
 # Save for future use
@@ -362,42 +347,39 @@ sessionInfo()
 ## [1] stats4    stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] yaml_2.3.7                  yardstick_1.2.0             workflowsets_1.0.1          workflows_1.1.3             tune_1.1.1                 
-##  [6] tidyr_1.3.0                 tibble_3.2.1                rsample_1.1.1               recipes_1.0.6               purrr_1.0.1                
-## [11] parsnip_1.1.0               modeldata_1.1.0             infer_1.0.4                 dials_1.2.0                 scales_1.2.1               
-## [16] broom_1.0.4                 tidymodels_1.1.0            org.Hs.eg.db_3.17.0         AnnotationDbi_1.61.2        biomaRt_2.55.0             
-## [21] metamoRph_0.2.0             recount3_1.10.2             SummarizedExperiment_1.30.2 Biobase_2.60.0              GenomicRanges_1.52.0       
-## [26] GenomeInfoDb_1.36.1         IRanges_2.34.1              S4Vectors_0.38.1            BiocGenerics_0.46.0         MatrixGenerics_1.12.3      
-## [31] matrixStats_1.0.0           dplyr_1.1.2                 ggplot2_3.4.2               knitr_1.43                 
+##  [1] knitr_1.43                  org.Hs.eg.db_3.17.0         AnnotationDbi_1.61.2        metamoRph_0.2.0            
+##  [5] recount3_1.10.2             SummarizedExperiment_1.30.2 Biobase_2.60.0              GenomicRanges_1.52.0       
+##  [9] GenomeInfoDb_1.36.1         IRanges_2.34.1              S4Vectors_0.38.1            BiocGenerics_0.46.0        
+## [13] MatrixGenerics_1.12.3       matrixStats_1.0.0           dplyr_1.1.2                 ggplot2_3.4.2              
 ## 
 ## loaded via a namespace (and not attached):
-##   [1] splines_4.3.0               BiocIO_1.9.2                bitops_1.0-7                filelock_1.0.2              R.oo_1.25.0                
-##   [6] polyclip_1.10-4             hardhat_1.3.0               XML_3.99-0.14               rpart_4.1.19                lifecycle_1.0.3            
-##  [11] edgeR_3.42.2                rprojroot_2.0.3             globals_0.16.2              processx_3.8.1              lattice_0.21-8             
-##  [16] pals_1.7                    MASS_7.3-60                 backports_1.4.1             magrittr_2.0.3              limma_3.56.1               
-##  [21] rmarkdown_2.23              metapod_1.7.0               sessioninfo_1.2.2           cowplot_1.1.1               mapproj_1.2.11             
-##  [26] DBI_1.1.3                   lubridate_1.9.2             maps_3.4.1                  abind_1.4-5                 zlibbioc_1.46.0            
-##  [31] R.utils_2.12.2              RCurl_1.98-1.12             nnet_7.3-19                 tweenr_2.0.2                rappdirs_0.3.3             
-##  [36] ipred_0.9-14                lava_1.7.2.1                GenomeInfoDbData_1.2.10     ggrepel_0.9.3               irlba_2.3.5.1              
-##  [41] listenv_0.9.0               parallelly_1.36.0           dqrng_0.3.0                 pkgdown_2.0.7               DelayedMatrixStats_1.21.0  
-##  [46] codetools_0.2-19            DelayedArray_0.26.7         DT_0.28                     scuttle_1.9.4               xml2_1.3.4                 
-##  [51] ggforce_0.4.1               tidyselect_1.2.0            farver_2.1.1                ScaledMatrix_1.8.1          BiocFileCache_2.7.2        
-##  [56] GenomicAlignments_1.35.1    BiocNeighbors_1.17.1        iterators_1.0.14            survival_3.5-5              foreach_1.5.2              
-##  [61] tictoc_1.2                  tools_4.3.0                 progress_1.2.2              Rcpp_1.0.11                 glue_1.6.2                 
-##  [66] prodlim_2023.03.31          xfun_0.40                   withr_2.5.0                 formatR_1.14                fastmap_1.1.1              
-##  [71] bluster_1.9.1               fansi_1.0.4                 callr_3.7.3                 digest_0.6.33               rsvd_1.0.5                 
-##  [76] timechange_0.2.0            R6_2.5.1                    colorspace_2.1-0            dichromat_2.0-0.1           RSQLite_2.3.1              
-##  [81] R.methodsS3_1.8.2           utf8_1.2.3                  generics_0.1.3              data.table_1.14.8           rtracklayer_1.59.1         
-##  [86] class_7.3-22                prettyunits_1.1.1           httr_1.4.6                  htmlwidgets_1.6.2           S4Arrays_1.0.5             
-##  [91] pkgconfig_2.0.3             gtable_0.3.3                timeDate_4022.108           blob_1.2.4                  GPfit_1.0-8                
-##  [96] SingleCellExperiment_1.22.0 XVector_0.40.0              furrr_0.3.1                 htmltools_0.5.5             png_0.1-8                  
-## [101] gower_1.0.1                 scran_1.27.1                rstudioapi_0.14             rjson_0.2.21                curl_5.0.0                 
-## [106] cachem_1.0.8                stringr_1.5.0               parallel_4.3.0              restfulr_0.0.15             desc_1.4.2                 
-## [111] pillar_1.9.0                grid_4.3.0                  vctrs_0.6.3                 BiocSingular_1.15.0         dbplyr_2.3.2               
-## [116] beachmat_2.15.0             lhs_1.1.6                   cluster_2.1.4               evaluate_0.21               cli_3.6.1                  
-## [121] locfit_1.5-9.7              compiler_4.3.0              Rsamtools_2.15.2            rlang_1.1.1                 crayon_1.5.2               
-## [126] future.apply_1.11.0         labeling_0.4.2              ps_1.7.5                    fs_1.6.3                    stringi_1.7.12             
-## [131] BiocParallel_1.33.11        munsell_0.5.0               Biostrings_2.67.2           Matrix_1.5-4.1              hms_1.1.3                  
-## [136] future_1.32.0               sparseMatrixStats_1.11.1    bit64_4.0.5                 KEGGREST_1.39.0             statmod_1.5.0              
-## [141] highr_0.10                  igraph_1.4.3                memoise_2.0.1               bit_4.0.5                   DiceDesign_1.9
+##   [1] rstudioapi_0.14             magrittr_2.0.3              farver_2.1.1                rmarkdown_2.23             
+##   [5] fs_1.6.3                    BiocIO_1.9.2                zlibbioc_1.46.0             vctrs_0.6.3                
+##   [9] memoise_2.0.1               Rsamtools_2.15.2            DelayedMatrixStats_1.21.0   RCurl_1.98-1.12            
+##  [13] htmltools_0.5.5             S4Arrays_1.0.5              curl_5.0.0                  BiocNeighbors_1.17.1       
+##  [17] tictoc_1.2                  desc_1.4.2                  cachem_1.0.8                GenomicAlignments_1.35.1   
+##  [21] igraph_1.4.3                lifecycle_1.0.3             pkgconfig_2.0.3             rsvd_1.0.5                 
+##  [25] Matrix_1.5-4.1              R6_2.5.1                    fastmap_1.1.1               GenomeInfoDbData_1.2.10    
+##  [29] digest_0.6.33               colorspace_2.1-0            ps_1.7.5                    rprojroot_2.0.3            
+##  [33] dqrng_0.3.0                 irlba_2.3.5.1               RSQLite_2.3.1               beachmat_2.15.0            
+##  [37] filelock_1.0.2              labeling_0.4.2              fansi_1.0.4                 httr_1.4.6                 
+##  [41] abind_1.4-5                 compiler_4.3.0              bit64_4.0.5                 withr_2.5.0                
+##  [45] BiocParallel_1.33.11        DBI_1.1.3                   highr_0.10                  R.utils_2.12.2             
+##  [49] maps_3.4.1                  DelayedArray_0.26.7         sessioninfo_1.2.2           rjson_0.2.21               
+##  [53] bluster_1.9.1               tools_4.3.0                 R.oo_1.25.0                 glue_1.6.2                 
+##  [57] callr_3.7.3                 restfulr_0.0.15             grid_4.3.0                  cluster_2.1.4              
+##  [61] generics_0.1.3              gtable_0.3.3                R.methodsS3_1.8.2           tidyr_1.3.0                
+##  [65] data.table_1.14.8           BiocSingular_1.15.0         ScaledMatrix_1.8.1          metapod_1.7.0              
+##  [69] utf8_1.2.3                  XVector_0.40.0              ggrepel_0.9.3               pillar_1.9.0               
+##  [73] stringr_1.5.0               limma_3.56.1                pals_1.7                    BiocFileCache_2.7.2        
+##  [77] lattice_0.21-8              rtracklayer_1.59.1          bit_4.0.5                   tidyselect_1.2.0           
+##  [81] SingleCellExperiment_1.22.0 locfit_1.5-9.7              Biostrings_2.67.2           scuttle_1.9.4              
+##  [85] edgeR_3.42.2                xfun_0.40                   statmod_1.5.0               stringi_1.7.12             
+##  [89] yaml_2.3.7                  evaluate_0.21               codetools_0.2-19            tibble_3.2.1               
+##  [93] cli_3.6.1                   processx_3.8.1              munsell_0.5.0               dichromat_2.0-0.1          
+##  [97] Rcpp_1.0.11                 mapproj_1.2.11              dbplyr_2.3.2                png_0.1-8                  
+## [101] XML_3.99-0.14               parallel_4.3.0              pkgdown_2.0.7               blob_1.2.4                 
+## [105] scran_1.27.1                sparseMatrixStats_1.11.1    bitops_1.0-7                scales_1.2.1               
+## [109] purrr_1.0.1                 crayon_1.5.2                rlang_1.1.1                 cowplot_1.1.1              
+## [113] KEGGREST_1.39.0             formatR_1.14
 ```

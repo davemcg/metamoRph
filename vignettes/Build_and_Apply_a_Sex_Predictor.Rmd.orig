@@ -83,7 +83,7 @@ project_counts <- brain_counts[, project_meta$id]
 gtex_sex <- run_pca(train_counts, train_meta, irlba_n = 50)
 
 sex_model <- model_build(gtex_sex$PCA$x, gtex_sex$meta %>%
-                               pull(Sex), num_PCs = 20, verbose = FALSE)
+                           pull(Sex), num_PCs = 20, verbose = FALSE)
 
 projected_data <- metamoRph(project_counts, gtex_sex$PCA$rotation, gtex_sex$center_scale)
 # apply model
@@ -124,7 +124,7 @@ rotation <- gtex_sex$PCA$rotation[,c('PC7','PC8')] %>% as_tibble(rownames = 'ENS
 
 library(org.Hs.eg.db)
 conv_table <- select(org.Hs.eg.db, keys=rotation$ENSEMBL, 
-                columns=c("SYMBOL","GENENAME", "MAP","GENETYPE"), keytype="ENSEMBL")
+                     columns=c("SYMBOL","GENENAME", "MAP","GENETYPE"), keytype="ENSEMBL")
 
 rotation <- rotation %>% left_join(conv_table, by = "ENSEMBL")
 bind_rows(rotation %>% arrange(PC7) %>% head(5),
@@ -150,14 +150,14 @@ bind_rows(projected_data %>%
   ggplot(aes(x = PC7, y = PC8)) + 
   geom_point(alpha = 0.5, aes(color = Sex)) + 
   geom_segment(data = top_rotations, 
-                arrow = arrow(),
+               arrow = arrow(),
                aes(x=0,y=0, 
                    xend = .data[['PC7']]*rotation_multipler_first, 
                    yend = .data[['PC8']]*rotation_multipler_second)) +
   ggrepel::geom_label_repel(data = top_rotations,
                             aes(x=.data[['PC7']]*rotation_multipler_first, 
-                            y = .data[['PC8']] * rotation_multipler_second, 
-                            label = GENENAME)) +
+                                y = .data[['PC8']] * rotation_multipler_second, 
+                                label = GENENAME)) +
   cowplot::theme_cowplot() 
 ```
 
@@ -171,18 +171,7 @@ eiad_matrix <- eiad_counts[,2:ncol(eiad_counts)] %>% as.matrix()
 row.names(eiad_matrix) <- stringr::str_extract(eiad_counts$Gene, 'ENSG\\d+')
 
 # eiad metadata
-#emeta <- data.table::fread('https://hpc.nih.gov/~mcgaugheyd/eyeIntegration/2023/eyeIntegration_meta_2023_03_03.csv.gz') 
-emeta <- data.table::fread('~/Downloads/eyeIntegration23_meta_2023_08_28.csv')
-## ID female and male samples by searching for "female"" and " male"" in the sample_title and sample_attribute fields
-female_accessions <- c(emeta %>% filter(grepl("female", sample_title)) %>% pull(run_accession),
-                       emeta %>% filter(grepl("female", sample_attribute)) %>% pull(run_accession)) %>% 
-  unique()
-male_accessions <- c(emeta %>% filter(grepl(" male", sample_title)) %>% pull(run_accession),
-                       emeta %>% filter(grepl(" male", sample_attribute)) %>% pull(run_accession)) %>% 
-  unique()
-
-emeta <- emeta %>% mutate(Sex = case_when(run_accession %in% female_accessions ~ 'Female',
-                                           run_accession %in% male_accessions ~ 'Male'))
+emeta <- data.table::fread('https://hpc.nih.gov/~mcgaugheyd/eyeIntegration/2023/eyeIntegration23_meta_2023_08_28.csv.gz') 
 
 eiad_mat_sexed <- eiad_matrix[, (emeta %>% filter(Cohort == 'Eye', !is.na(Sex)) %>% pull(sample_accession))]
 ```
@@ -192,12 +181,17 @@ Then use `model_apply` to predict the sex.
 
 ```{r}
 projected_data_outside <- metamoRph(eiad_mat_sexed, gtex_sex$PCA$rotation, gtex_sex$center_scale)
-label_guesses_outside <- model_apply(sex_model, projected_data_outside, emeta %>% filter(Cohort == 'Eye', !is.na(Sex)) %>% pull(Sex) %>% stringr::str_to_title())
+label_guesses_outside <- model_apply(sex_model, 
+                                     projected_data_outside, 
+                                     emeta %>% filter(Cohort == 'Eye', 
+                                                      !is.na(Sex)) %>% 
+                                       pull(Sex) %>% 
+                                       stringr::str_to_title())
 ```
 
 ## Accuracy
 
-99.5% Three out of 619 labelled sexes are wrong. The three that don't match the label have pretty high scores (0.772 to 0.938). 
+99.5% Three out of 619 labelled sexes are wrong. The three that don't match the label have pretty high scores (0.77 to 0.94). 
 ```{r}
 num_correct <- label_guesses_outside %>%
   filter(sample_label == predict) %>% 
