@@ -43,7 +43,7 @@ model_build <- function(training_data,
 
   models <- bplapply(unique(sort(training_labels)), function(target) {
     if (verbose){
-      message(paste0("Model training for ", target))
+      message(paste0("Model training for ", gsub('metamoRphPrefix_','',target)))
     }
     binary_training_labels <- training_labels
     binary_training_labels[binary_training_labels != target] <- 'Other'
@@ -77,7 +77,7 @@ model_build <- function(training_data,
       }
       model <-  parsnip::rand_forest(trees = 500, min_n = 5) %>%
         parsnip::set_mode("regression") %>%
-        parsnip::set_engine("ranger") %>%
+        parsnip::set_engine("ranger", importance = "impurity") %>%
         parsnip::fit(labels ~ .,
             data = data.frame(cbind(labels,training_data)))
     } else if (model == 'svm'){
@@ -133,23 +133,18 @@ model_apply <- function(list_of_models,
   # turn predictions into a tibble
   predictions <- predictions %>% bind_cols()
   colnames(predictions) <- names(list_of_models)
-  second_max_col <- function(x) {
-    sorted_values <- sort(x, decreasing = TRUE)
-    second_highest <- sorted_values[2]
-    which(x == second_highest)
-  }
+
   # identify the most likely celltype call (highest value) for each sample
   # and the 2nd
   calls <- cbind(row.names(experiment_data),
                  colnames(predictions)[apply(predictions, 1, which.max)],
-                 colnames(predictions)[apply(predictions, 1, second_max_col)],
                  apply(predictions, 1, max)) %>%
     data.frame()
-  colnames(calls) <- c('sample_id', 'predict', 'predict_second', 'max_score')
+  colnames(calls) <- c('sample_id', 'predict', 'max_score')
   # optionally put in true labels for input data (if given)
   if (experiment_labels[1] != ''){
     calls$sample_label <- experiment_labels
-    colnames(calls) <- c('sample_id', 'predict', 'predict_second', 'max_score', 'sample_label')
+    colnames(calls) <- c('sample_id', 'predict', 'max_score', 'sample_label')
     calls <- calls %>% relocate(sample_id, sample_label)
   }
 
@@ -168,7 +163,6 @@ model_apply <- function(list_of_models,
 
     # remove prefix before outputting results
     calls <- calls %>% mutate(predict = gsub('metamoRphPrefix_','',predict), 
-                                          predict_second = gsub('metamoRphPrefix_','',predict_second),
                                           predict_stringent = gsub('metamoRphPrefix_','',predict_stringent))
     calls
   }
