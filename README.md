@@ -92,3 +92,5 @@ projected_pca <- metamoRph(t(log2(new_data)),
   - [projectR](https://www.bioconductor.org/packages/release/bioc/html/projectR.html)
     - Can transfer data onto PCA *and* NMF 
     - At least for PCA does not provide any guardrails for properly scaling the query data
+  - [scPred](https://powellgenomicslab.github.io/scPred/articles/introduction.html)
+    - scRNA cell type label transfer tool which uses PCA projection (and leverages Harmony to do batch correction).
