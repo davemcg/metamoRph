@@ -102,7 +102,7 @@ select_HVG <- function(feature_by_sample,
   
   if (length(hvg_force) > 0){
     # add in user required features
-    select <- c(select, hvg_force)
+    select <- unique(c(select, hvg_force) )
     # if (!hvg_force %in% row.names(feature_by_sample)){
     #   stop("Requested feature / gene not in your input matrix!")
     # }
