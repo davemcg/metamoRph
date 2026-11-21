@@ -16,10 +16,14 @@
 #' @param BPPARAM The BiocParallel class
 #' @param model Default is lm. We also support xgboost, glm, rf, and svm.
 #' In our experience we find lm and svm to be the best performers.
+#' @param folds Default is 1. The number of folds / splits / cross validations 
+#' that the model data is split into. Helps control for over-fitting. If more than
+#' 1 is selected then the data is split into that many pieces and the results are 
+#' mean blended.
 #' @param verbose Print training status for each label type
 #' @return A list of models for each individual label type
 #' @import BiocParallel
-#' @importFrom stats lm glm binomial
+#' @importFrom stats lm glm binomial rsample parsnip
 #' @export
 model_build <- function(training_data,
                         training_labels,
@@ -40,7 +44,7 @@ model_build <- function(training_data,
     num_PCs <- ncol(training_data)
   }
   training_data <- training_data[,1:num_PCs]
-
+  
   models <- bplapply(unique(sort(training_labels)), function(target) {
     if (verbose){
       message(paste0("Model training for ", gsub('metamoRphPrefix_','',target)))
@@ -61,7 +65,7 @@ model_build <- function(training_data,
         message("This requires the 'parsnip' package.")
         return(invisible())
       }
-      model <- parsnip::boost_tree(mode = "regression", trees = 200) %>%
+      model <- parsnip::boost_tree(mode = "regression", trees = 1000) %>%
         parsnip::fit(labels ~ .,
             data = data.frame(cbind(labels,training_data)))
       # } else if (model == 'nnet'){
@@ -75,7 +79,7 @@ model_build <- function(training_data,
         message("This requires the 'parsnip' package.")
         return(invisible())
       }
-      model <-  parsnip::rand_forest(trees = 500, min_n = 5) %>%
+      model <-  parsnip::rand_forest(trees = 1000, min_n = 5) %>%
         parsnip::set_mode("regression") %>%
         parsnip::set_engine("ranger", importance = "impurity") %>%
         parsnip::fit(labels ~ .,
@@ -83,6 +87,10 @@ model_build <- function(training_data,
     } else if (model == 'svm'){
       if(!requireNamespace("parsnip")){
         message("This requires the 'parsnip' package.")
+        return(invisible())
+      }
+      if(!requireNamespace("LiblineaR")){
+        message("This requires the 'LiblineaR' package.")
         return(invisible())
       }
       model <- parsnip::svm_linear(cost = 1, margin = 0.1) %>%
